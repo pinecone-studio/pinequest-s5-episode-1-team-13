@@ -1,69 +1,110 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { CameraTile } from "@/components/dashboard/camera-tile";
+import { StatCards } from "@/components/dashboard/stat-cards";
+import { useRealtimeEvents } from "@/components/providers/realtime-provider";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ViolationDetailDialog } from "@/components/violations/violation-detail-dialog";
+import { ViolationTable } from "@/components/violations/violation-table";
+import { api } from "@/lib/api";
+import type { Camera, DashboardStats, Violation } from "@/types";
+
+const RECENT = 8;
+
+export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [cameras, setCameras] = useState<Camera[]>([]);
+  const [recent, setRecent] = useState<Violation[]>([]);
+  const [selected, setSelected] = useState<Violation | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const statsTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const refreshStats = useCallback(() => {
+    clearTimeout(statsTimer.current);
+    statsTimer.current = setTimeout(() => api.stats().then(setStats).catch(() => undefined), 300);
+  }, []);
+
+  useEffect(() => {
+    Promise.all([api.stats(), api.cameras(), api.violations({ page_size: RECENT })])
+      .then(([s, c, v]) => {
+        setStats(s);
+        setCameras(c);
+        setRecent(v.items);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Ачаалж чадсангүй"));
+    const poll = setInterval(() => api.stats().then(setStats).catch(() => undefined), 15_000); // AI heartbeat
+    return () => {
+      clearInterval(poll);
+      clearTimeout(statsTimer.current);
+    };
+  }, []);
+
+  useRealtimeEvents((event) => {
+    switch (event.type) {
+      case "VIOLATION_CREATED":
+        setRecent((prev) =>
+          [{ ...event.data, zone_id: null, resolved_at: null, resolved_by: null, created_at: event.data.detected_at }, ...prev.filter((v) => v.id !== event.data.id)].slice(0, RECENT),
+        );
+        refreshStats();
+        break;
+      case "VIOLATION_UPDATED":
+        setRecent((prev) => prev.map((v) => (v.id === event.data.id ? event.data : v)));
+        setSelected((cur) => (cur?.id === event.data.id ? event.data : cur));
+        refreshStats();
+        break;
+      case "CAMERA_UPDATED":
+        setCameras((prev) => (prev.some((c) => c.id === event.data.id) ? prev.map((c) => (c.id === event.data.id ? event.data : c)) : [...prev, event.data]));
+        refreshStats();
+        break;
+      case "VIOLATION_DELETED":
+        setRecent((prev) => prev.filter((v) => v.id !== event.data.id));
+        setSelected((cur) => (cur?.id === event.data.id ? null : cur));
+        refreshStats();
+        break;
+      case "CAMERA_DELETED":
+        setCameras((prev) => prev.filter((c) => c.id !== event.data.id));
+        refreshStats();
+        break;
+    }
+  });
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="space-y-6">
+      {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+      <StatCards stats={stats} />
+
+      <section>
+        <h2 className="mb-3 text-xs font-semibold tracking-[0.2em] text-muted-foreground">КАМЕРЫН ШУУД ХЯНАЛТ</h2>
+        {cameras.length === 0 ? (
+          <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">
+            Камер байхгүй байна. Хяналт эхлэхийн тулд <Link href="/cameras" className="text-foreground underline">камер нэмнэ үү</Link>.
+          </CardContent></Card>
+        ) : (
+          <div className={cameras.length === 1 ? "grid max-w-5xl gap-5" : "grid gap-5 xl:grid-cols-2"}>
+            {cameras.map((camera) => <CameraTile key={camera.id} camera={camera} />)}
+          </div>
+        )}
+      </section>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">СҮҮЛИЙН ЗӨРЧЛҮҮД</CardTitle>
+          <Link href="/violations" className="text-xs text-muted-foreground hover:text-foreground">Бүгдийг харах →</Link>
+        </CardHeader>
+        <CardContent>
+          <ViolationTable items={recent} onOpen={setSelected} empty="Зөрчил илрээгүй байна" />
+        </CardContent>
+      </Card>
+
+      <ViolationDetailDialog
+        violation={selected}
+        onClose={() => setSelected(null)}
+        onChanged={(v) => { setSelected(v); setRecent((prev) => prev.map((x) => (x.id === v.id ? v : x))); refreshStats(); }}
+        onDeleted={(id) => { setSelected(null); setRecent((prev) => prev.filter((x) => x.id !== id)); refreshStats(); }}
+      />
     </div>
   );
 }
