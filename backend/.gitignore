@@ -1,0 +1,7 @@
+# Python (root .gitignore нь зөвхөн Node/Next.js-ийг хамардаг)
+.venv/
+__pycache__/
+.pytest_cache/
+logs/
+# Root-ийн `.env*` дүрэм жишээ файлыг ч алгасдаг тул буцааж оруулна (нууц утгагүй)
+!.env.example
