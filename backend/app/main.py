@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import health
+from app.api import auth, health, users
 from app.config import get_settings
 from app.core.logging import setup_logging
 from app.database.database import get_engine
@@ -62,4 +62,6 @@ async def security_middleware(request: Request, call_next):
 
 
 app.include_router(health.router)
+app.include_router(auth.router)
+app.include_router(users.router)
 
