@@ -11,7 +11,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import auth, cameras, dashboard, health, internal, mediamtx, users, violations, zones
+from app.api import auth, cameras, dashboard, health, internal, mediamtx, training, users, violations, zones
 from app.api.deps import COOKIE_NAME, user_from_token
 from app.config import get_settings
 from app.core.logging import setup_logging
@@ -85,10 +85,11 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(zones.router)
 app.include_router(cameras.router)
-app.include_router(mediamtx.router)
 app.include_router(violations.router)
 app.include_router(dashboard.router)
 app.include_router(internal.router)
+app.include_router(mediamtx.router)
+app.include_router(training.router)
 
 
 @app.websocket("/ws")
