@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -10,11 +11,12 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import auth, cameras, health, mediamtx, users, zones
+from app.api import auth, cameras, dashboard, health, internal, mediamtx, users, violations, zones
 from app.api.deps import COOKIE_NAME, user_from_token
 from app.config import get_settings
 from app.core.logging import setup_logging
 from app.database.database import get_engine, new_session
+from app.services.retention import retention_loop
 from app.websocket.manager import manager
 
 settings = get_settings()
@@ -40,7 +42,11 @@ async def lifespan(_: FastAPI):
         raise RuntimeError("backend/.env дутуу эсвэл буруу байна: " + ", ".join(problems))
     get_engine()
     logger.info("Backend started (env=%s, origins=%s)", settings.app_env, settings.cors_origin_list)
-    yield
+    purge_task = asyncio.create_task(retention_loop())
+    try:
+        yield
+    finally:
+        purge_task.cancel()
 
 
 app = FastAPI(
@@ -80,6 +86,9 @@ app.include_router(users.router)
 app.include_router(zones.router)
 app.include_router(cameras.router)
 app.include_router(mediamtx.router)
+app.include_router(violations.router)
+app.include_router(dashboard.router)
+app.include_router(internal.router)
 
 
 @app.websocket("/ws")
