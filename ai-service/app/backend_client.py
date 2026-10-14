@@ -47,5 +47,9 @@ class BackendClient:
         """Call after writing the new status to the DB. Backend broadcasts CAMERA_UPDATED."""
         return self._send("POST", f"/internal/cameras/{camera_id}/status")
 
+    def detections(self, camera_id: str, people: list[dict]) -> bool:
+        """Live boxes for the dashboard overlay. Not saved, only forwarded over WebSocket (max 50 people)."""
+        return self._send("PUT", f"/internal/cameras/{camera_id}/detections", json={"people": people[:50]})
+
     def close(self) -> None:
         self._client.close()

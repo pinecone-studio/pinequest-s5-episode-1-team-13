@@ -32,6 +32,19 @@ class Settings(BaseSettings):
     # Re-read the camera list from the database this often (seconds). New/removed/rotated cameras apply within this time.
     camera_refresh_seconds: float = Field(10, ge=2, le=300)
 
+    # YOLO model (.pt or .onnx). Relative paths start from the ai-service folder.
+    model_path: str = ""
+    # Model class name -> our class name, e.g. "hardhat:helmet,no-hardhat:no_helmet". Empty = model already uses our names.
+    class_mapping: str = ""
+    conf_threshold: float = Field(0.4, ge=0.05, le=0.95)
+    imgsz: int = Field(640, ge=256, le=1920)
+    detect_fps: float = Field(3, ge=0.5, le=15)  # AI runs this many times per second per camera
+
+    @property
+    def resolved_model_path(self) -> Path:
+        path = Path(self.model_path)
+        return path if path.is_absolute() else (SERVICE_ROOT / path).resolve()
+
     @property
     def backend_base(self) -> str:
         return self.backend_url.rstrip("/")
@@ -47,6 +60,8 @@ class Settings(BaseSettings):
             problems.append("DATABASE_URL")
         if self.camera_secret_key in _PLACEHOLDERS:
             problems.append("CAMERA_SECRET_KEY")
+        if not self.model_path or not self.resolved_model_path.is_file():
+            problems.append("MODEL_PATH (file not found)")
         return problems
 
 

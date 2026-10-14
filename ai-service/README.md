@@ -33,6 +33,19 @@ can't play IP cameras and webcams.
 The camera list is re-read every `CAMERA_REFRESH_SECONDS`. Each camera runs in its own thread and reconnects by itself.
 The AI analyses the **rotated** picture (same as the dashboard shows); mirror is applied by the dashboard only.
 
+## How detection works
+
+1. Every `1 / DETECT_FPS` seconds the YOLO model looks at the newest frame of each camera.
+2. It finds 5 kinds of boxes: `person, helmet, no_helmet, work_uniform, no_work_uniform`.
+3. `app/detection/ppe.py` gives each **head** box to the person whose head area contains it, and each **body** box
+   to the person whose body area contains it.
+4. For every person: `helmet` and `uniform` = `YES` / `NO` / `UNKNOWN`.
+   **Violation** = no helmet (where required) or no uniform. `UNKNOWN` is never a violation, to avoid false alarms.
+5. In **OFFICE** zones a helmet is not required.
+6. The boxes go to the dashboard live (`DETECTIONS` over WebSocket). Person ids come from the tracker (ByteTrack).
+
+Using a model with other class names (for example a public hard-hat model)? Set `CLASS_MAPPING`.
+
 ## Test
 
 ```bash
@@ -44,4 +57,5 @@ python -m pytest
 | Call | When |
 |---|---|
 | `POST /internal/heartbeat` | every `HEARTBEAT_SECONDS` — dashboard shows "AI ONLINE" |
+| `PUT /internal/cameras/{id}/detections` | every AI step: people, boxes (0..1), helmet/uniform state |
 | `POST /internal/cameras/{id}/status` | after the camera status changes in the DB (CONNECTING, STREAMING, RECONNECTING, ERROR, OFFLINE) |

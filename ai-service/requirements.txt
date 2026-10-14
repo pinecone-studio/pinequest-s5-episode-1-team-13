@@ -5,3 +5,5 @@ psycopg2-binary>=2.9.9
 cryptography>=42.0.0
 numpy>=1.26.0
 opencv-python>=4.9.0
+ultralytics>=8.3.0
+lap>=0.5.12  # needed by the ByteTrack person tracker

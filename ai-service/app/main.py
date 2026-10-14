@@ -17,6 +17,9 @@ from app.cameras.worker import CameraWorker
 from app.config import get_settings
 from app.crypto import SecretBox
 from app.db import Database
+from app.detection.classes import parse_mapping
+from app.detection.model import Detector
+from app.detection.pipeline import CameraAI
 from app.logging_setup import setup_logging
 
 logger = logging.getLogger("ai.main")
@@ -37,6 +40,12 @@ def main() -> int:
         logger.error("Fill these in ai-service/.env first: %s", ", ".join(problems))
         return 1
 
+    try:
+        parse_mapping(settings.class_mapping)
+    except ValueError as exc:
+        logger.error("%s", exc)
+        return 1
+
     stop = threading.Event()
     signal.signal(signal.SIGINT, lambda *_: stop.set())
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
@@ -44,9 +53,16 @@ def main() -> int:
     client = BackendClient(settings.backend_base, settings.internal_api_key)
     db = Database(settings.database_url)
     secrets = SecretBox(settings.camera_secret_key)
+
+    def make_detector() -> Detector:
+        return Detector(settings.resolved_model_path, settings.class_mapping, settings.conf_threshold, settings.imgsz)
+
+    def make_ai() -> CameraAI:
+        return CameraAI(client, make_detector, settings.detect_fps)
+
     manager = CameraManager(
         load=lambda: repository.load_cameras(db, secrets),
-        make_worker=lambda cam: CameraWorker(cam, settings, db, client),
+        make_worker=lambda cam: CameraWorker(cam, settings, db, client, ai=make_ai()),
     )
     threading.Thread(target=heartbeat_loop, args=(client, settings.heartbeat_seconds, stop), name="heartbeat", daemon=True).start()
 
