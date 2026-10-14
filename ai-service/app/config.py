@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     # Violation rules
     violation_confirm_seconds: float = Field(2.0, ge=0, le=60)  # must be seen this long before it is saved
     violation_cooldown_seconds: float = Field(60, ge=5, le=3600)  # same person + same type: save again only after this
+    # Frames darker / blurrier than this are not used for violations or training pictures (0 = check off)
+    min_brightness: float = Field(35, ge=0, le=255)
+    min_sharpness: float = Field(25, ge=0, le=5000)
 
     # Supabase Storage for snapshot pictures (same as backend/.env)
     supabase_url: str = ""

@@ -53,6 +53,8 @@ The AI analyses the **rotated** picture (same as the dashboard shows); mirror is
   → new row in `violations` → `POST /internal/violations/{id}/created` → the dashboard shows it instantly.
 - The same person (tracker id) with the same violation is saved again only after `VIOLATION_COOLDOWN_SECONDS`.
 - If the upload fails the violation is still saved, just without a picture.
+- Frames that are too **dark** (`MIN_BRIGHTNESS`) or too **blurry** (`MIN_SHARPNESS`) are not used for violations or
+  training pictures; the live boxes still show. Night or a dirty lens no longer creates false "NO helmet" alarms.
 
 ## Training data collection
 
