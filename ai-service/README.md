@@ -44,6 +44,24 @@ The AI analyses the **rotated** picture (same as the dashboard shows); mirror is
 5. In **OFFICE** zones a helmet is not required.
 6. The boxes go to the dashboard live (`DETECTIONS` over WebSocket). Person ids come from the tracker (ByteTrack).
 
+## How violations are saved
+
+- A "NO" must be seen for `VIOLATION_CONFIRM_SECONDS` (default 2 s) — one wrong frame is not enough.
+- Then: snapshot (person marked in red) → Supabase Storage `violation-snapshots/<camera>/<yyyy/mm/dd>/<id>.jpg`
+  → new row in `violations` → `POST /internal/violations/{id}/created` → the dashboard shows it instantly.
+- The same person (tracker id) with the same violation is saved again only after `VIOLATION_COOLDOWN_SECONDS`.
+- If the upload fails the violation is still saved, just without a picture.
+
+## Training data collection
+
+Turn it on in the web **Training** page. While it's on, every `interval_seconds` each camera saves:
+
+- `training/datasets/raw/<name>.jpg` — the picture
+- `training/datasets/labels_auto/<name>.txt` — the AI's guess (YOLO format), so labelling starts half-done
+
+Pictures with nobody in them are kept 5 times less often. Collection pauses at `max_images`.
+After training, point `MODEL_PATH` to the new model and leave `CLASS_MAPPING` empty.
+
 Using a model with other class names (for example a public hard-hat model)? Set `CLASS_MAPPING`.
 
 ## Test
@@ -58,4 +76,5 @@ python -m pytest
 |---|---|
 | `POST /internal/heartbeat` | every `HEARTBEAT_SECONDS` — dashboard shows "AI ONLINE" |
 | `PUT /internal/cameras/{id}/detections` | every AI step: people, boxes (0..1), helmet/uniform state |
+| `POST /internal/violations/{id}/created` | right after a new violation row is saved |
 | `POST /internal/cameras/{id}/status` | after the camera status changes in the DB (CONNECTING, STREAMING, RECONNECTING, ERROR, OFFLINE) |

@@ -40,6 +40,23 @@ class Settings(BaseSettings):
     imgsz: int = Field(640, ge=256, le=1920)
     detect_fps: float = Field(3, ge=0.5, le=15)  # AI runs this many times per second per camera
 
+    # Violation rules
+    violation_confirm_seconds: float = Field(2.0, ge=0, le=60)  # must be seen this long before it is saved
+    violation_cooldown_seconds: float = Field(60, ge=5, le=3600)  # same person + same type: save again only after this
+
+    # Supabase Storage for snapshot pictures (same as backend/.env)
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    supabase_storage_bucket: str = "violation-snapshots"
+
+    # Training data folder. MUST be the same place as backend TRAINING_DIR (default: <repo>/training)
+    dataset_dir: str = "../training"
+
+    @property
+    def resolved_dataset_dir(self) -> Path:
+        path = Path(self.dataset_dir)
+        return path if path.is_absolute() else (SERVICE_ROOT / path).resolve()
+
     @property
     def resolved_model_path(self) -> Path:
         path = Path(self.model_path)
