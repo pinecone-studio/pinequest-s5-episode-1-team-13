@@ -8,6 +8,7 @@ from collections.abc import Callable
 import numpy as np
 
 from app.backend_client import BackendClient
+from app.cameras.quality import measure
 from app.dataset.collector import DatasetCollector
 from app.cameras.models import CameraInfo
 from app.detection.motion import MotionGate
@@ -29,8 +30,12 @@ class CameraAI:
         reporter: ViolationReporter | None = None,
         collector: DatasetCollector | None = None,
         motion: MotionGate | None = None,
+        min_brightness: float = 0,
+        min_sharpness: float = 0,
     ) -> None:
         self._motion = motion
+        self._min_brightness, self._min_sharpness = min_brightness, min_sharpness
+        self._last_problem: str | None = None
         self._client = client
         self._collector = collector
         self._rules, self._reporter = rules, reporter
@@ -62,10 +67,26 @@ class CameraAI:
             self._client.detections(camera.id, [p.to_payload(width, height) for p in people])
         self._sent_empty = not people
 
-        if self._rules is not None and self._reporter is not None:
-            for vtype, person in self._rules.update(people, now):
-                self._reporter.submit(camera, frame, person, vtype)
-
-        if self._collector is not None:
-            self._collector.maybe_save(frame, camera.name, camera.id, detections, now)
+        # Live boxes are always shown, but a dark or blurry frame is not trusted for saving anything
+        problem = self.frame_problem(frame, camera.name) if (self._rules or self._collector) else None
+        if problem is None:
+            if self._rules is not None and self._reporter is not None:
+                for vtype, person in self._rules.update(people, now):
+                    self._reporter.submit(camera, frame, person, vtype)
+            if self._collector is not None:
+                self._collector.maybe_save(frame, camera.name, camera.id, detections, now)
         return people
+
+    def frame_problem(self, frame: np.ndarray, camera_name: str) -> str | None:
+        if not self._min_brightness and not self._min_sharpness:
+            return None
+        quality = measure(frame)
+        problem = quality.problem(self._min_brightness, self._min_sharpness)
+        if problem != self._last_problem:  # log only when it changes, not every frame
+            if problem:
+                logger.warning("%s: frame %s (brightness %.0f, sharpness %.0f) — not saving violations",
+                               camera_name, problem, quality.brightness, quality.sharpness)  # fmt: skip
+            else:
+                logger.info("%s: picture quality OK again", camera_name)
+            self._last_problem = problem
+        return problem

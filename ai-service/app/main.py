@@ -75,8 +75,9 @@ def main() -> int:
         collector = DatasetCollector(dataset_root, collection, image_counter)
         motion = MotionGate(settings.motion_threshold, settings.motion_max_skip_seconds) if settings.motion_skip else None
         return CameraAI(
-            client, make_detector, settings.detect_fps, rules=rules, reporter=reporter, collector=collector, motion=motion
-        )
+            client, make_detector, settings.detect_fps, rules=rules, reporter=reporter, collector=collector, motion=motion,
+            min_brightness=settings.min_brightness, min_sharpness=settings.min_sharpness,
+        )  # fmt: skip
 
     manager = CameraManager(
         load=lambda: repository.load_cameras(db, secrets),
