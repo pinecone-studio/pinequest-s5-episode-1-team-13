@@ -1,0 +1,5 @@
+person
+helmet
+no_helmet
+work_uniform
+no_work_uniform
