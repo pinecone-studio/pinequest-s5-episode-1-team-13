@@ -17,17 +17,19 @@ from app.cameras.reader import FrameReader
 from app.cameras.sources import mediamtx_url, source_for
 from app.config import Settings
 from app.db import Database
+from app.detection.pipeline import CameraAI
 
 logger = logging.getLogger("ai.worker")
 
 
 class CameraWorker(threading.Thread):
-    def __init__(self, camera: CameraInfo, settings: Settings, db: Database, client: BackendClient) -> None:
+    def __init__(self, camera: CameraInfo, settings: Settings, db: Database, client: BackendClient, ai: CameraAI | None = None) -> None:
         super().__init__(name=f"camera-{camera.name}", daemon=True)
         self.camera = camera
         self._settings, self._db, self._client = settings, db, client
         self._stop = threading.Event()
         self._status: str | None = None
+        self.ai = ai
         source = source_for(camera, settings.mediamtx_rtsp_url, settings.internal_api_key)
         self.reader = FrameReader(source, camera.name)
         self.publisher = None
@@ -56,6 +58,8 @@ class CameraWorker(threading.Thread):
 
     def handle_frame(self, frame: np.ndarray, now: float) -> None:
         """AI processing hook. `frame` is already rotated upright."""
+        if self.ai is not None:
+            self.ai.process(frame, self.camera, now)
 
     def run(self) -> None:
         self._report("CONNECTING")
