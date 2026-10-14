@@ -31,6 +31,8 @@ can't play IP cameras and webcams.
 | BROWSER | MediaMTX `cam_<id>` (user `ai`, password = `INTERNAL_API_KEY`) | MediaMTX (the browser publishes it) |
 
 The camera list is re-read every `CAMERA_REFRESH_SECONDS`. Each camera runs in its own thread and reconnects by itself.
+If MediaMTX is down, the AI waits longer between tries (5 s, 10 s, 20 s … up to 60 s) and goes back to 5 s once
+publishing has worked for 30 s.
 The AI analyses the **rotated** picture (same as the dashboard shows); mirror is applied by the dashboard only.
 
 ## How detection works
