@@ -13,7 +13,14 @@ import time
 import numpy as np
 
 logger = logging.getLogger("ai.publisher")
-RETRY_SECONDS = 5.0
+RETRY_START = 5.0  # first wait after a failure
+RETRY_MAX = 60.0  # never wait longer than this
+STABLE_SECONDS = 30.0  # publishing this long without a failure = healthy again, next failure starts at 5 s
+
+
+def next_wait(previous: float | None) -> float:
+    """5 s, 10 s, 20 s, 40 s, 60 s, 60 s ... — MediaMTX down for long won't spam ffmpeg restarts and logs."""
+    return RETRY_START if previous is None else min(previous * 2, RETRY_MAX)
 
 
 def ffmpeg_command(width: int, height: int, fps: int, url: str) -> list[str]:
@@ -34,6 +41,8 @@ class VideoPublisher:
         self._proc: subprocess.Popen | None = None
         self._size: tuple[int, int] | None = None
         self._retry_at = 0.0
+        self._wait: float | None = None  # current backoff, None = healthy
+        self._started_at = 0.0
 
     @staticmethod
     def available() -> bool:
@@ -42,6 +51,7 @@ class VideoPublisher:
     def _start(self, width: int, height: int) -> None:
         self._proc = subprocess.Popen(ffmpeg_command(width, height, self._fps, self._url), stdin=subprocess.PIPE)
         self._size = (width, height)
+        self._started_at = time.time()
         logger.info("Publishing %s to MediaMTX (%dx%d @ %d fps)", self._name, width, height, self._fps)
 
     def send(self, frame: np.ndarray) -> None:
@@ -53,11 +63,12 @@ class VideoPublisher:
         height, width = frame.shape[:2]
         if self._proc is not None:
             if self._proc.poll() is not None:  # ffmpeg died (MediaMTX down?) — wait before trying again
-                logger.warning("ffmpeg stopped for %s, retry in %.0fs", self._name, RETRY_SECONDS)
-                self.close()
-                self._retry_at = time.time() + RETRY_SECONDS
+                self._failed("ffmpeg stopped")
             elif self._size != (width, height):  # camera changed resolution — restart now
                 self.close()
+            elif self._wait is not None and time.time() - self._started_at >= STABLE_SECONDS:
+                logger.info("Publishing %s is stable again", self._name)
+                self._wait = None
         if self._proc is None:
             if time.time() < self._retry_at:
                 return
@@ -65,9 +76,13 @@ class VideoPublisher:
         try:
             self._proc.stdin.write(frame.tobytes())
         except (BrokenPipeError, OSError):
-            logger.warning("MediaMTX publish failed for %s, retry in %.0fs", self._name, RETRY_SECONDS)
-            self.close()
-            self._retry_at = time.time() + RETRY_SECONDS
+            self._failed("MediaMTX publish failed")
+
+    def _failed(self, reason: str) -> None:
+        self.close()
+        self._wait = next_wait(self._wait)
+        self._retry_at = time.time() + self._wait
+        logger.warning("%s for %s, retry in %.0fs", reason, self._name, self._wait)
 
     def close(self) -> None:
         if self._proc is None:
