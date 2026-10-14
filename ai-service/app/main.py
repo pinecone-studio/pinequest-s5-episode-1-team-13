@@ -11,7 +11,12 @@ import sys
 import threading
 
 from app.backend_client import BackendClient
+from app.cameras import repository
+from app.cameras.manager import CameraManager
+from app.cameras.worker import CameraWorker
 from app.config import get_settings
+from app.crypto import SecretBox
+from app.db import Database
 from app.logging_setup import setup_logging
 
 logger = logging.getLogger("ai.main")
@@ -37,10 +42,22 @@ def main() -> int:
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
 
     client = BackendClient(settings.backend_base, settings.internal_api_key)
+    db = Database(settings.database_url)
+    secrets = SecretBox(settings.camera_secret_key)
+    manager = CameraManager(
+        load=lambda: repository.load_cameras(db, secrets),
+        make_worker=lambda cam: CameraWorker(cam, settings, db, client),
+    )
+    threading.Thread(target=heartbeat_loop, args=(client, settings.heartbeat_seconds, stop), name="heartbeat", daemon=True).start()
+
     logger.info("AI service started | backend=%s", settings.backend_base)
     try:
-        heartbeat_loop(client, settings.heartbeat_seconds, stop)
+        while not stop.is_set():
+            manager.sync()
+            stop.wait(settings.camera_refresh_seconds)
     finally:
+        manager.stop_all()
+        db.close()
         client.close()
         logger.info("AI service stopped")
     return 0
