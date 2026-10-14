@@ -20,6 +20,7 @@ from app.dataset.collector import CollectionConfig, DatasetCollector, ImageCount
 from app.db import Database
 from app.detection.classes import parse_mapping
 from app.detection.model import Detector
+from app.detection.motion import MotionGate
 from app.detection.pipeline import CameraAI
 from app.logging_setup import setup_logging
 from app.storage import SnapshotStorage
@@ -72,7 +73,10 @@ def main() -> int:
     def make_ai() -> CameraAI:
         rules = ViolationRules(settings.violation_confirm_seconds, settings.violation_cooldown_seconds)
         collector = DatasetCollector(dataset_root, collection, image_counter)
-        return CameraAI(client, make_detector, settings.detect_fps, rules=rules, reporter=reporter, collector=collector)
+        motion = MotionGate(settings.motion_threshold, settings.motion_max_skip_seconds) if settings.motion_skip else None
+        return CameraAI(
+            client, make_detector, settings.detect_fps, rules=rules, reporter=reporter, collector=collector, motion=motion
+        )
 
     manager = CameraManager(
         load=lambda: repository.load_cameras(db, secrets),
