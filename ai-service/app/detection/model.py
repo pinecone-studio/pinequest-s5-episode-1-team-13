@@ -8,24 +8,26 @@ from pathlib import Path
 import numpy as np
 
 from app.detection.classes import parse_mapping, resolve_names
+from app.detection.device import pick_device
 from app.detection.types import Detection
 
 logger = logging.getLogger("ai.model")
 
 
 class Detector:
-    def __init__(self, model_path: Path, class_mapping: str, conf: float, imgsz: int) -> None:
+    def __init__(self, model_path: Path, class_mapping: str, conf: float, imgsz: int, device: str = "auto") -> None:
         from ultralytics import YOLO  # heavy import, only when a camera actually needs the AI
 
+        self.device = pick_device(device, model_path)
         self._model = YOLO(str(model_path), task="detect")
         self._names = resolve_names(dict(self._model.names), parse_mapping(class_mapping))
         self._conf, self._imgsz = conf, imgsz
         if "person" not in self._names.values():
             logger.warning("Model has no 'person' class: nobody can be checked. Fix CLASS_MAPPING or the model.")
-        logger.info("Model loaded: %s | classes used: %s", model_path.name, sorted(set(self._names.values())))
+        logger.info("Model loaded: %s | device=%s | classes used: %s", model_path.name, self.device, sorted(set(self._names.values())))
 
     def __call__(self, frame: np.ndarray) -> list[Detection]:
-        result = self._model.track(frame, persist=True, conf=self._conf, imgsz=self._imgsz, verbose=False)[0]
+        result = self._model.track(frame, persist=True, conf=self._conf, imgsz=self._imgsz, device=self.device, verbose=False)[0]
         boxes = result.boxes
         if boxes is None or len(boxes) == 0:
             return []

@@ -64,6 +64,9 @@ Turn it on in the web **Training** page. While it's on, every `interval_seconds`
 Pictures with nobody in them are kept 5 times less often. Collection pauses at `max_images`.
 After training, point `MODEL_PATH` to the new model and leave `CLASS_MAPPING` empty.
 
+**Speed:** `DEVICE=auto` uses the Apple GPU (`mps`) on M-chip Macs for `.pt` models, an NVIDIA GPU (`cuda`) when
+there is one, otherwise the CPU. `.onnx` models always run on the CPU with ONNX Runtime. The start-up log shows `AI device: ...`.
+
 Using a model with other class names (for example a public hard-hat model)? Set `CLASS_MAPPING`.
 
 **Check a model before using it** (classes, mapping, READY / PARTIAL / NOT USABLE):
