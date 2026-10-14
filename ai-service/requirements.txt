@@ -7,3 +7,5 @@ numpy>=1.26.0
 opencv-python>=4.9.0
 ultralytics>=8.3.0
 lap>=0.5.12  # needed by the ByteTrack person tracker
+onnxruntime>=1.17.0  # runs .onnx models (Training page output) without PyTorch
+onnx>=1.15.0  # needed by scripts/export_onnx.py
