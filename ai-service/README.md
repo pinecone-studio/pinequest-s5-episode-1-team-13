@@ -88,6 +88,20 @@ python -m scripts.export_onnx path/to/model.pt --imgsz 640
 
 Models from the Training page are already `.onnx`.
 
+## Training pictures from your own photos and videos
+
+Use any model (even a public PPE model) to pre-label photos/videos for the Training page.
+`--only-hard` keeps only pictures the model is unsure about (a box scored 0.3–0.6): those teach the most.
+
+```bash
+python -m scripts.prelabel ~/Documents/ppe-photos --model models/ppe-public.pt \
+  --mapping "Worker:person,Hard_hat:helmet,No-Helmet:no_helmet,Vest:work_uniform,No-Vest:no_work_uniform"
+python -m scripts.prelabel walk.mp4 --every 0.5 --only-hard
+```
+
+Pictures go to `training/datasets/raw`, the model's guesses to `labels_auto`. Then check and fix the boxes on the
+Training page and train. Near-duplicate video frames are skipped.
+
 ## Test
 
 ```bash
