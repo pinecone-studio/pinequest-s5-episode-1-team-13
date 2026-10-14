@@ -49,6 +49,14 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = ""
     supabase_storage_bucket: str = "violation-snapshots"
 
+    # Training data folder. MUST be the same place as backend TRAINING_DIR (default: <repo>/training)
+    dataset_dir: str = "../training"
+
+    @property
+    def resolved_dataset_dir(self) -> Path:
+        path = Path(self.dataset_dir)
+        return path if path.is_absolute() else (SERVICE_ROOT / path).resolve()
+
     @property
     def resolved_model_path(self) -> Path:
         path = Path(self.model_path)

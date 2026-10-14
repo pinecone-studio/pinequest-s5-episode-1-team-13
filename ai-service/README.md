@@ -52,6 +52,16 @@ The AI analyses the **rotated** picture (same as the dashboard shows); mirror is
 - The same person (tracker id) with the same violation is saved again only after `VIOLATION_COOLDOWN_SECONDS`.
 - If the upload fails the violation is still saved, just without a picture.
 
+## Training data collection
+
+Turn it on in the web **Training** page. While it's on, every `interval_seconds` each camera saves:
+
+- `training/datasets/raw/<name>.jpg` — the picture
+- `training/datasets/labels_auto/<name>.txt` — the AI's guess (YOLO format), so labelling starts half-done
+
+Pictures with nobody in them are kept 5 times less often. Collection pauses at `max_images`.
+After training, point `MODEL_PATH` to the new model and leave `CLASS_MAPPING` empty.
+
 Using a model with other class names (for example a public hard-hat model)? Set `CLASS_MAPPING`.
 
 ## Test

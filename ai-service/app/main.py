@@ -16,6 +16,7 @@ from app.cameras.manager import CameraManager
 from app.cameras.worker import CameraWorker
 from app.config import get_settings
 from app.crypto import SecretBox
+from app.dataset.collector import CollectionConfig, DatasetCollector, ImageCounter
 from app.db import Database
 from app.detection.classes import parse_mapping
 from app.detection.model import Detector
@@ -64,10 +65,14 @@ def main() -> int:
     if not storage.enabled:
         logger.warning("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set: violations are saved WITHOUT snapshot pictures")
     reporter = ViolationReporter(db, storage, client)
+    collection = CollectionConfig(db)
+    dataset_root = settings.resolved_dataset_dir
+    image_counter = ImageCounter(dataset_root / "datasets" / "raw")
 
     def make_ai() -> CameraAI:
         rules = ViolationRules(settings.violation_confirm_seconds, settings.violation_cooldown_seconds)
-        return CameraAI(client, make_detector, settings.detect_fps, rules=rules, reporter=reporter)
+        collector = DatasetCollector(dataset_root, collection, image_counter)
+        return CameraAI(client, make_detector, settings.detect_fps, rules=rules, reporter=reporter, collector=collector)
 
     manager = CameraManager(
         load=lambda: repository.load_cameras(db, secrets),
