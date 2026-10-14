@@ -19,6 +19,7 @@ from app.crypto import SecretBox
 from app.dataset.collector import CollectionConfig, DatasetCollector, ImageCounter
 from app.db import Database
 from app.detection.classes import parse_mapping
+from app.detection.device import pick_device
 from app.detection.model import Detector
 from app.detection.motion import MotionGate
 from app.detection.pipeline import CameraAI
@@ -47,6 +48,7 @@ def main() -> int:
 
     try:
         parse_mapping(settings.class_mapping)
+        logger.info("AI device: %s", pick_device(settings.device, settings.resolved_model_path))
     except ValueError as exc:
         logger.error("%s", exc)
         return 1
@@ -60,7 +62,7 @@ def main() -> int:
     secrets = SecretBox(settings.camera_secret_key)
 
     def make_detector() -> Detector:
-        return Detector(settings.resolved_model_path, settings.class_mapping, settings.conf_threshold, settings.imgsz)
+        return Detector(settings.resolved_model_path, settings.class_mapping, settings.conf_threshold, settings.imgsz, settings.device)
 
     storage = SnapshotStorage(settings.supabase_url, settings.supabase_service_role_key, settings.supabase_storage_bucket)
     if not storage.enabled:

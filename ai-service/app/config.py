@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     conf_threshold: float = Field(0.4, ge=0.05, le=0.95)
     imgsz: int = Field(640, ge=256, le=1920)
     detect_fps: float = Field(3, ge=0.5, le=15)  # AI runs this many times per second per camera
+    device: str = "auto"  # auto | mps (Apple GPU) | cuda (NVIDIA) | cpu
     # Skip YOLO when the picture did not change and nobody was there (saves CPU with many cameras)
     motion_skip: bool = True
     motion_threshold: float = Field(0.01, ge=0.0005, le=0.5)  # share of the picture that must change
