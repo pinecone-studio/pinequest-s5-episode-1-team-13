@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     conf_threshold: float = Field(0.4, ge=0.05, le=0.95)
     imgsz: int = Field(640, ge=256, le=1920)
     detect_fps: float = Field(3, ge=0.5, le=15)  # AI runs this many times per second per camera
+    # Skip YOLO when the picture did not change and nobody was there (saves CPU with many cameras)
+    motion_skip: bool = True
+    motion_threshold: float = Field(0.01, ge=0.0005, le=0.5)  # share of the picture that must change
+    motion_max_skip_seconds: float = Field(5, ge=1, le=60)  # still run YOLO at least this often
 
     # Violation rules
     violation_confirm_seconds: float = Field(2.0, ge=0, le=60)  # must be seen this long before it is saved

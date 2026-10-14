@@ -42,7 +42,9 @@ The AI analyses the **rotated** picture (same as the dashboard shows); mirror is
 4. For every person: `helmet` and `uniform` = `YES` / `NO` / `UNKNOWN`.
    **Violation** = no helmet (where required) or no uniform. `UNKNOWN` is never a violation, to avoid false alarms.
 5. In **OFFICE** zones a helmet is not required.
-6. The boxes go to the dashboard live (`DETECTIONS` over WebSocket). Person ids come from the tracker (ByteTrack).
+6. **Motion skip:** if nobody was in the picture and less than `MOTION_THRESHOLD` (1 %) of it changed,
+   YOLO is skipped. It still runs at least every `MOTION_MAX_SKIP_SECONDS`, and always while people are visible.
+7. The boxes go to the dashboard live (`DETECTIONS` over WebSocket). Person ids come from the tracker (ByteTrack).
 
 ## How violations are saved
 

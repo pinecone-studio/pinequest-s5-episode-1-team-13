@@ -10,6 +10,7 @@ import numpy as np
 from app.backend_client import BackendClient
 from app.dataset.collector import DatasetCollector
 from app.cameras.models import CameraInfo
+from app.detection.motion import MotionGate
 from app.detection.ppe import analyse
 from app.detection.types import Detection, PersonResult
 from app.violations.reporter import ViolationReporter
@@ -27,14 +28,16 @@ class CameraAI:
         rules: ViolationRules | None = None,
         reporter: ViolationReporter | None = None,
         collector: DatasetCollector | None = None,
+        motion: MotionGate | None = None,
     ) -> None:
+        self._motion = motion
         self._client = client
         self._collector = collector
         self._rules, self._reporter = rules, reporter
         self._make_detector = make_detector
         self._detector = None
         self._interval = 1.0 / detect_fps
-        self._last_run = 0.0
+        self._last_run = float("-inf")  # first frame always runs
         self._sent_empty = True
 
     def process(self, frame: np.ndarray, camera: CameraInfo, now: float) -> list[PersonResult] | None:
@@ -47,6 +50,8 @@ class CameraAI:
         if now - self._last_run < self._interval:
             return None
         self._last_run = now
+        if self._motion is not None and not self._motion.should_run(frame, now, people_last_time=not self._sent_empty):
+            return None  # nothing moved and nobody was there: the dashboard already shows no boxes
         if self._detector is None:
             self._detector = self._make_detector()
 
