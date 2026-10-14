@@ -6,3 +6,6 @@ logs/
 *.pt
 *.onnx
 .pytest_cache/
+
+# The root .gitignore hides all .env* files; the example has no secrets and must be shared
+!.env.example
