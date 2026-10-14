@@ -98,3 +98,13 @@ python -m pytest
 | `PUT /internal/cameras/{id}/detections` | every AI step: people, boxes (0..1), helmet/uniform state |
 | `POST /internal/violations/{id}/created` | right after a new violation row is saved |
 | `POST /internal/cameras/{id}/status` | after the camera status changes in the DB (CONNECTING, STREAMING, RECONNECTING, ERROR, OFFLINE) |
+
+## Demo without cameras
+
+Runs the model on a photo or video and saves a copy with boxes (green = OK, red = violation, grey = unknown).
+Only needs the model, not the backend or database. Good backup for presentations.
+
+```bash
+python -m scripts.demo factory.jpg            # -> factory_demo.jpg
+python -m scripts.demo walk.mp4 --max-seconds 20   # -> walk_demo.mp4 + how many violations would be saved
+```
