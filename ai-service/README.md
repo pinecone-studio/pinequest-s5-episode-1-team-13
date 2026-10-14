@@ -64,6 +64,16 @@ After training, point `MODEL_PATH` to the new model and leave `CLASS_MAPPING` em
 
 Using a model with other class names (for example a public hard-hat model)? Set `CLASS_MAPPING`.
 
+## Demo without cameras
+
+Runs the model on a photo or video and saves a copy with boxes (green = OK, red = violation, grey = unknown).
+Only needs the model, not the backend or database. Good backup for presentations.
+
+```bash
+python -m scripts.demo factory.jpg            # -> factory_demo.jpg
+python -m scripts.demo walk.mp4 --max-seconds 20   # -> walk_demo.mp4 + how many violations would be saved
+```
+
 ## Test
 
 ```bash
