@@ -21,6 +21,9 @@ from app.detection.classes import parse_mapping
 from app.detection.model import Detector
 from app.detection.pipeline import CameraAI
 from app.logging_setup import setup_logging
+from app.storage import SnapshotStorage
+from app.violations.reporter import ViolationReporter
+from app.violations.rules import ViolationRules
 
 logger = logging.getLogger("ai.main")
 
@@ -57,8 +60,14 @@ def main() -> int:
     def make_detector() -> Detector:
         return Detector(settings.resolved_model_path, settings.class_mapping, settings.conf_threshold, settings.imgsz)
 
+    storage = SnapshotStorage(settings.supabase_url, settings.supabase_service_role_key, settings.supabase_storage_bucket)
+    if not storage.enabled:
+        logger.warning("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set: violations are saved WITHOUT snapshot pictures")
+    reporter = ViolationReporter(db, storage, client)
+
     def make_ai() -> CameraAI:
-        return CameraAI(client, make_detector, settings.detect_fps)
+        rules = ViolationRules(settings.violation_confirm_seconds, settings.violation_cooldown_seconds)
+        return CameraAI(client, make_detector, settings.detect_fps, rules=rules, reporter=reporter)
 
     manager = CameraManager(
         load=lambda: repository.load_cameras(db, secrets),
@@ -73,6 +82,8 @@ def main() -> int:
             stop.wait(settings.camera_refresh_seconds)
     finally:
         manager.stop_all()
+        reporter.close()
+        storage.close()
         db.close()
         client.close()
         logger.info("AI service stopped")

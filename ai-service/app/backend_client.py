@@ -51,5 +51,9 @@ class BackendClient:
         """Live boxes for the dashboard overlay. Not saved, only forwarded over WebSocket (max 50 people)."""
         return self._send("PUT", f"/internal/cameras/{camera_id}/detections", json={"people": people[:50]})
 
+    def violation_created(self, violation_id: str) -> bool:
+        """Call after the violation row is in the DB. Backend broadcasts VIOLATION_CREATED (with a signed snapshot URL)."""
+        return self._send("POST", f"/internal/violations/{violation_id}/created")
+
     def close(self) -> None:
         self._client.close()

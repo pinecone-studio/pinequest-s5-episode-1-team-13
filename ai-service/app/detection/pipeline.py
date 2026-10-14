@@ -11,13 +11,23 @@ from app.backend_client import BackendClient
 from app.cameras.models import CameraInfo
 from app.detection.ppe import analyse
 from app.detection.types import Detection, PersonResult
+from app.violations.reporter import ViolationReporter
+from app.violations.rules import ViolationRules
 
 logger = logging.getLogger("ai.pipeline")
 
 
 class CameraAI:
-    def __init__(self, client: BackendClient, make_detector: Callable[[], Callable[[np.ndarray], list[Detection]]], detect_fps: float) -> None:
+    def __init__(
+        self,
+        client: BackendClient,
+        make_detector: Callable[[], Callable[[np.ndarray], list[Detection]]],
+        detect_fps: float,
+        rules: ViolationRules | None = None,
+        reporter: ViolationReporter | None = None,
+    ) -> None:
         self._client = client
+        self._rules, self._reporter = rules, reporter
         self._make_detector = make_detector
         self._detector = None
         self._interval = 1.0 / detect_fps
@@ -42,4 +52,8 @@ class CameraAI:
         if people or not self._sent_empty:
             self._client.detections(camera.id, [p.to_payload(width, height) for p in people])
         self._sent_empty = not people
+
+        if self._rules is not None and self._reporter is not None:
+            for vtype, person in self._rules.update(people, now):
+                self._reporter.submit(camera, frame, person, vtype)
         return people
