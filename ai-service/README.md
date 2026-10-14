@@ -64,6 +64,13 @@ After training, point `MODEL_PATH` to the new model and leave `CLASS_MAPPING` em
 
 Using a model with other class names (for example a public hard-hat model)? Set `CLASS_MAPPING`.
 
+**Check a model before using it** (classes, mapping, READY / PARTIAL / NOT USABLE):
+
+```bash
+python -m scripts.check_model                      # MODEL_PATH from .env
+python -m scripts.check_model model.onnx --image test.jpg
+```
+
 **Faster on CPU:** convert a `.pt` model to ONNX. It prints the classes and a `CLASS_MAPPING` hint.
 
 ```bash
