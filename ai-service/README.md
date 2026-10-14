@@ -19,6 +19,20 @@ python -m app.main
 
 `INTERNAL_API_KEY` must be the same as in `backend/.env`.
 
+Video publishing needs **ffmpeg** (`brew install ffmpeg`). Without it, detection still works but the dashboard
+can't play IP cameras and webcams.
+
+## How video flows
+
+| Camera type | AI reads from | Dashboard plays from |
+|---|---|---|
+| DAHUA / HIKVISION / GENERIC_RTSP | the camera's RTSP URL | MediaMTX `cam_<id>` (AI publishes it with ffmpeg) |
+| LOCAL_WEBCAM | device number (`0`, `1`) | MediaMTX `cam_<id>` (AI publishes it) |
+| BROWSER | MediaMTX `cam_<id>` (user `ai`, password = `INTERNAL_API_KEY`) | MediaMTX (the browser publishes it) |
+
+The camera list is re-read every `CAMERA_REFRESH_SECONDS`. Each camera runs in its own thread and reconnects by itself.
+The AI analyses the **rotated** picture (same as the dashboard shows); mirror is applied by the dashboard only.
+
 ## Test
 
 ```bash
@@ -30,3 +44,4 @@ python -m pytest
 | Call | When |
 |---|---|
 | `POST /internal/heartbeat` | every `HEARTBEAT_SECONDS` — dashboard shows "AI ONLINE" |
+| `POST /internal/cameras/{id}/status` | after the camera status changes in the DB (CONNECTING, STREAMING, RECONNECTING, ERROR, OFFLINE) |

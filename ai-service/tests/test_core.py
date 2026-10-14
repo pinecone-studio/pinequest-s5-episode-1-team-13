@@ -29,7 +29,11 @@ def test_backend_error_does_not_crash():
     assert make_client(down).heartbeat() is False
 
 
+GOOD = {"internal_api_key": "k" * 40, "database_url": "postgresql://u:p@db:5432/x", "camera_secret_key": "f" * 44}
+
+
 def test_startup_problems():
-    assert Settings(_env_file=None, internal_api_key="CHANGE_ME").startup_problems() == ["INTERNAL_API_KEY"]
-    assert Settings(_env_file=None, internal_api_key="k" * 40).startup_problems() == []
-    assert "BACKEND_URL" in Settings(_env_file=None, internal_api_key="k", backend_url="localhost").startup_problems()
+    assert Settings(_env_file=None, **GOOD).startup_problems() == []
+    assert Settings(_env_file=None, **{**GOOD, "internal_api_key": "CHANGE_ME"}).startup_problems() == ["INTERNAL_API_KEY"]
+    assert "BACKEND_URL" in Settings(_env_file=None, **GOOD, backend_url="localhost").startup_problems()
+    assert "DATABASE_URL" in Settings(_env_file=None, **{**GOOD, "database_url": "postgresql://USER:PASSWORD@HOST:5432/DATABASE"}).startup_problems()

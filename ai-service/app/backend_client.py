@@ -43,5 +43,9 @@ class BackendClient:
         """Dashboard shows AI status ONLINE while heartbeats keep coming."""
         return self._send("POST", "/internal/heartbeat")
 
+    def camera_status(self, camera_id: str) -> bool:
+        """Call after writing the new status to the DB. Backend broadcasts CAMERA_UPDATED."""
+        return self._send("POST", f"/internal/cameras/{camera_id}/status")
+
     def close(self) -> None:
         self._client.close()
