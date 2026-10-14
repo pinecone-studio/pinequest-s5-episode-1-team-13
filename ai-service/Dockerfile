@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-RUN useradd -m appuser && mkdir -p /models /training && chown -R appuser /app /models /training
+RUN useradd -m appuser && mkdir -p /models /training /tmp/ultralytics && chown -R appuser /app /models /training /tmp/ultralytics
 USER appuser
 
 # Models and training data live outside the image (mount them as volumes).
