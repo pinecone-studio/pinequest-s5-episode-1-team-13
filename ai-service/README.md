@@ -66,6 +66,14 @@ After training, point `MODEL_PATH` to the new model and leave `CLASS_MAPPING` em
 
 Using a model with other class names (for example a public hard-hat model)? Set `CLASS_MAPPING`.
 
+**Faster on CPU:** convert a `.pt` model to ONNX. It prints the classes and a `CLASS_MAPPING` hint.
+
+```bash
+python -m scripts.export_onnx path/to/model.pt --imgsz 640
+```
+
+Models from the Training page are already `.onnx`.
+
 ## Test
 
 ```bash
