@@ -42,7 +42,7 @@ def test_rtsp_url_builder_encodes_credentials():
     )
     assert build_rtsp_url("a", "b", "h", 554, 2, 1, "HIKVISION").endswith("/Streaming/Channels/202")
     with pytest.raises(ValueError):
-        build_rtsp_url("a", "b", "h", 554, 1, 0, "GENERIC_RTSP")
+        build_rtsp_url("a", "b", "h", 554, 1, 0, "LOCAL_WEBCAM")
 
 
 def test_camera_schemas_never_expose_password_or_url():
@@ -290,3 +290,28 @@ def test_restricted_areas_validation():
     for bad in ([[(0, 0), (1, 1)]], [[(0, 0), (1.5, 0), (1, 1)]], [[(0, 0), (1, 0), (1, 1)]] * 6, [[(0.1, 0.1)] * 31]):
         with pytest.raises(ValidationError):
             RestrictedAreas(areas=bad)
+
+
+def test_generic_rtsp_full_url():
+    from pydantic import ValidationError
+
+    from app.schemas.camera import CameraCreate, CameraUpdate
+
+    base = {"name": "Phone", "rtsp_port": 554, "username": "u", "password": "p", "camera_type": "GENERIC_RTSP"}
+    cam = CameraCreate(**base, ip_address=" rtsp://192.168.1.50:8080/h264_ulaw.sdp ")
+    assert cam.ip_address == "rtsp://192.168.1.50:8080/h264_ulaw.sdp"
+    assert CameraCreate(**base, ip_address="192.168.1.50").ip_address == "192.168.1.50"
+    assert CameraUpdate(ip_address="rtsps://cam.local/live").ip_address == "rtsps://cam.local/live"
+    bad = ["rtsp://admin:secret@192.168.1.50/live", "rtsp:///nohost", "rtsp://bad host/x", "rtsp://1.2.3.4:99999/x", "http://1.2.3.4/x"]
+    for value in bad:
+        with pytest.raises(ValidationError):
+            CameraCreate(**base, ip_address=value)
+    with pytest.raises(ValidationError):  # full URL only for GENERIC_RTSP
+        CameraCreate(**{**base, "camera_type": "DAHUA"}, ip_address="rtsp://192.168.1.50/live")
+
+
+def test_generic_rtsp_url_matches_ai_service():
+    assert build_rtsp_url("a b", "p@ss", "rtsp://10.0.0.5:8080/h264.sdp?x=1", 554, 1, 0, "GENERIC_RTSP") == (
+        "rtsp://a%20b:p%40ss@10.0.0.5:8080/h264.sdp?x=1"
+    )
+    assert build_rtsp_url("u", "p", "10.0.0.5", 8554, 1, 0, "GENERIC_RTSP") == "rtsp://u:p@10.0.0.5:8554/"

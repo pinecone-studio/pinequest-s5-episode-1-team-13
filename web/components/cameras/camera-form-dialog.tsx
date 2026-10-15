@@ -115,8 +115,12 @@ function CameraFormBody({ camera, zones, onClose, onSaved }: Props) {
           ) : (
             <>
               <div className="space-y-2">
-                <Label htmlFor="cam-ip">IP хаяг</Label>
-                <Input id="cam-ip" required value={form.ip_address} onChange={(e) => set("ip_address", e.target.value)} placeholder="192.168.1.100" />
+                <Label htmlFor="cam-ip">{form.camera_type === "GENERIC_RTSP" ? "IP эсвэл бүтэн RTSP хаяг" : "IP хаяг"}</Label>
+                <Input id="cam-ip" required value={form.ip_address} onChange={(e) => set("ip_address", e.target.value)}
+                  placeholder={form.camera_type === "GENERIC_RTSP" ? "rtsp://192.168.1.50:8080/h264.sdp" : "192.168.1.100"} />
+                {form.camera_type === "GENERIC_RTSP" && (
+                  <p className="text-xs text-muted-foreground">Утасны апп гэх мэт өөр замтай камерт бүтэн хаяг бичнэ. Нэр, нууц үгийг хаягт биш доорх талбарт.</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cam-port">RTSP порт</Label>
