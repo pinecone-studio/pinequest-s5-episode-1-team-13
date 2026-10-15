@@ -9,3 +9,6 @@ logs/
 
 # The root .gitignore hides all .env* files; the example has no secrets and must be shared
 !.env.example
+
+# Our trained model is shared in git so everyone uses the same one
+!models/ppe-ours-v2.pt

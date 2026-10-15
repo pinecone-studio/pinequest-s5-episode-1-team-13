@@ -157,3 +157,22 @@ python -m scripts.prelabel walk.mp4 --every 0.5 --only-hard
 
 Pictures go to `training/datasets/raw`, the model's guesses to `labels_auto`. Then check and fix the boxes on the
 Training page and train. Near-duplicate video frames are skipped.
+
+## Our model
+
+`models/ppe-ours-v2.pt` is the team model (in git, 22 MB). It is the default `MODEL_PATH` in `.env.example`.
+Classes match ours, so `CLASS_MAPPING` stays empty. Trained at `IMGSZ=512`.
+
+Scores on 443 test pictures it never saw while learning (mAP50, 1 = perfect):
+
+| person | helmet | no_helmet | work_uniform | no_work_uniform | all |
+|---|---|---|---|---|---|
+| 0.96 | 0.91 | 0.86 | 0.79 | 0.94 | 0.89 |
+
+These test pictures are from public datasets, not our cameras, so add our own labelled frames over time.
+
+Trained (YOLO, about 2,700 training pictures) on:
+
+- "hard-hat & safety-vest" by chihs-workspace, Roboflow Universe, CC BY 4.0
+- "Hard Hat Workers" by joseph-nelson, Roboflow Universe, Public Domain
+- "Safety Vests" by echo-dotf3, Roboflow Universe, CC BY 4.0
