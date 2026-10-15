@@ -280,6 +280,9 @@ def test_internal_endpoints_and_websocket(client, admin):
     try:
         assert client.post("/internal/heartbeat").status_code == 401
         assert client.post("/internal/heartbeat", headers={"X-Internal-Key": "wrong"}).status_code == 401
+        # Edge хаяг: key-гүй / буруу хаяг. Зөв хаягийг энд бичихгүй — хуваалцсан DB-ийн бодит edge хаягийг дарна.
+        assert client.put("/internal/edge", json={"url": "https://abc.trycloudflare.com"}).status_code == 401
+        assert client.put("/internal/edge", headers=KEY, json={"url": "http://abc.trycloudflare.com"}).status_code == 400
 
         with pytest.raises(WebSocketDisconnect), client.websocket_connect("/ws"):  # cookie-гүй WebSocket татгалзагдана
             pass

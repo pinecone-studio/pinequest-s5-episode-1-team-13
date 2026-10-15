@@ -158,6 +158,52 @@ def test_stale_missing_or_unsafe_edge_url_falls_back_to_env(monkeypatch):
     assert svc.public_media_url(_db_with("not-a-dict"), now=1000.0) == fallback
 
 
+@pytest.mark.parametrize(
+    ("raw", "clean"),
+    [
+        ("https://abc.trycloudflare.com", "https://abc.trycloudflare.com"),
+        (" https://Media.Example.com/ ", "https://media.example.com"),
+        ("https://media.example.com:8443", "https://media.example.com:8443"),
+        ("https://[2001:db8::1]:8443", "https://[2001:db8::1]:8443"),
+        ("http://abc.trycloudflare.com", None),  # зөвхөн https
+        ("https://user:pw@abc.trycloudflare.com", None),
+        ("https://abc.trycloudflare.com/cam_x/whep", None),
+        ("https://abc.trycloudflare.com?x=1", None),
+        ("https://abc.trycloudflare.com:99999", None),
+        ("https://", None),
+        ("javascript:alert(1)", None),
+        ("https://" + "a" * 300 + ".com", None),
+    ],
+)
+def test_clean_edge_url(raw, clean):
+    from app.services.camera_service import clean_edge_url
+
+    assert clean_edge_url(raw) == clean
+
+
+def test_edge_announce_endpoint_saves_clean_url(monkeypatch):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from app.api import internal
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "internal_api_key", "k" * 32)
+    saved = []
+    monkeypatch.setattr(internal, "_save_edge", saved.append)
+    app = FastAPI()
+    app.include_router(internal.router)
+    client = TestClient(app)
+
+    assert client.put("/internal/edge", json={"url": "https://abc.trycloudflare.com/"}).status_code == 401
+    key = {"X-Internal-Key": "k" * 32}
+    assert client.put("/internal/edge", headers=key, json={"url": "https://abc.trycloudflare.com/x"}).status_code == 400
+    assert client.put("/internal/edge", headers=key, json={}).status_code == 422
+    assert saved == []
+    assert client.put("/internal/edge", headers=key, json={"url": "https://abc.trycloudflare.com/"}).status_code == 204
+    assert saved == ["https://abc.trycloudflare.com"]
+
+
 def test_local_backend_never_follows_someone_elses_edge(monkeypatch):
     svc = _settings(monkeypatch, probe=True)  # локал backend
     assert svc.public_media_url(_db_with({"url": "https://abc.trycloudflare.com", "at": 1000.0}), now=1010.0) == "http://localhost:8889"
