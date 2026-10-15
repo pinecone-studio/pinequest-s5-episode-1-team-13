@@ -99,6 +99,8 @@ Deploy-ийг платформуудын GitHub integration хийнэ, GitHub-�
 
 Нэг удаагийн тохиргоо (dashboard дээр):
 
+- **GitHub** → Settings → Actions → General: **Allow all actions and reusable workflows** (байгууллагын түвшинд
+  унтраалттай бол org owner асаана). Push хийсний дараа Actions tab-д CI run гарч ирэхгүй бол энэ тохиргоог шалгана.
 - **Railway** → backend service → Settings: Root Directory `backend`, Config-as-code path `/backend/railway.json`
   ([`backend/railway.json`](backend/railway.json): Dockerfile, `/health` healthcheck, зөвхөн `/backend/**` өөрчлөгдөхөд deploy),
   Deploy → **Wait for CI** асаана (CI унавал deploy хийхгүй).
