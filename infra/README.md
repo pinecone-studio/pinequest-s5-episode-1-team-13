@@ -16,7 +16,9 @@ browser камер ─WebRTC (WHIP)─► MediaMTX ─RTSP─► ai-service
 | Файл | Үүрэг |
 |---|---|
 | [`infra/mediamtx.yml`](mediamtx.yml) | MediaMTX тохиргоо: портууд, `cam_<camera_id>` path-ууд, backend руу HTTP нэвтрэлт |
-| [`infra/edge/factory.yml`](edge/factory.yml) | Үйлдвэрийн компьютер: ai-service + MediaMTX + cloudflared tunnel + edge-announcer |
+| [`infra/edge/factory.yml`](edge/factory.yml) | Үйлдвэрийн компьютер: ai-service + MediaMTX + cloudflared named tunnel (тогтмол домэйн) + edge-announcer |
+| [`infra/edge/factory-quick.yml`](edge/factory-quick.yml) | Мөн адил, домэйнгүй: cloudflared quick tunnel (демо) |
+| [`infra/edge/factory.base.yml`](edge/factory.base.yml) | Дээрх хоёрын хуваалцсан service-үүд (шууд асаахгүй) |
 | [`infra/edge/vps.yml`](edge/vps.yml) | VPS: MediaMTX (RTSPS) + Caddy (HTTPS) + edge-announcer |
 | [`infra/edge/ai.yml`](edge/ai.yml) | VPS горимд үйлдвэрийн компьютер: зөвхөн ai-service |
 | [`infra/edge/announce.py`](edge/announce.py) | MediaMTX-ийн HTTPS хаягийг backend-д минут тутам мэдэгдэнэ (`PUT /internal/edge`) |
@@ -73,11 +75,13 @@ Edge нь MediaMTX-ийн HTTPS хаягаа backend-д минут тутам м
 | Горим | Хаана | Команд (repo-ийн root-оос) |
 |---|---|---|
 | Бүгд нэг дор | Үйлдвэрийн компьютер | `docker compose -f infra/edge/factory.yml up -d --build` |
+| Бүгд нэг дор, домэйнгүй (демо) | Үйлдвэрийн компьютер | `docker compose -f infra/edge/factory-quick.yml up -d --build` |
 | VPS | Public IP-тэй сервер | `docker compose -f infra/edge/vps.yml up -d` |
 | VPS горимд AI | Үйлдвэрийн компьютер | `docker compose -f infra/edge/ai.yml up -d --build` |
 
 ```
-Бүгд нэг дор:  IP камер ─► ai-service ─RTSP─► MediaMTX ◄─ cloudflared (https://<random>.trycloudflare.com) ◄─ browser
+Бүгд нэг дор:  IP камер ─► ai-service ─RTSP─► MediaMTX ◄─ cloudflared named tunnel (https://<MEDIA_DOMAIN>) ◄─ browser
+Домэйнгүй:     IP камер ─► ai-service ─RTSP─► MediaMTX ◄─ cloudflared quick tunnel (https://<random>.trycloudflare.com) ◄─ browser
 VPS горим:     IP камер ─► ai-service (үйлдвэр) ─RTSPS :8322─► MediaMTX (VPS) ◄─ Caddy (https://<MEDIA_DOMAIN>) ◄─ browser
 ```
 
@@ -93,10 +97,30 @@ VPS горим:     IP камер ─► ai-service (үйлдвэр) ─RTSPS :8
 
 ### Бүгд нэг дор (үйлдвэрийн компьютер)
 
-- `infra/edge/.env`: `BACKEND_URL`, `INTERNAL_API_KEY`, `EDGE_HOSTS=<энэ компьютерийн LAN IP>`, `MODEL_FILE`.
-- Cloudflare quick tunnel: аккаунтгүй, асах бүрт хаяг солигдоно — edge-announcer шинэ хаягийг автоматаар мэдэгдэнэ.
+- `infra/edge/.env`: `BACKEND_URL`, `INTERNAL_API_KEY`, `EDGE_HOSTS=<энэ компьютерийн LAN IP>`, `MODEL_FILE`,
+  `MEDIA_DOMAIN`, `CLOUDFLARE_TUNNEL_TOKEN` (доорх "Тогтмол домэйн").
 - Firewall (Windows Defender): `8189/udp`, `8189/tcp`-г LAN-д нээнэ. Өөр сүлжээнээс үзэх бол router дээр 8189 udp/tcp-г
   port-forward хийж, `EDGE_HOSTS`-д public IP-г нэмнэ (эсвэл TURN — доорх хэсэг).
+- Домэйнгүй үед `factory-quick.yml`: Cloudflare quick tunnel, аккаунтгүй, асах бүрт хаяг солигдоно (edge-announcer шинэ
+  хаягийг автоматаар мэдэгдэнэ). `MEDIA_DOMAIN`, `CLOUDFLARE_TUNNEL_TOKEN` хэрэггүй.
+
+### Тогтмол домэйн (Cloudflare named tunnel)
+
+`factory.yml`-ийн MediaMTX нь `https://<MEDIA_DOMAIN>` (жишээ `media.example.com`) гэсэн тогтмол хаягтай. HTTPS сертификатыг
+Cloudflare өгнө, router дээр 80/443 нээх шаардлагагүй (cloudflared зөвхөн гадагш холбогдоно). Домэйны DNS Cloudflare дээр байх ёстой.
+
+1. [Cloudflare dashboard](https://dash.cloudflare.com) → **Zero Trust** → **Networks** → **Tunnels** → **Create a tunnel** →
+   **Cloudflared**, нэр (жишээ `pinequest-factory`).
+2. "Install and run a connector" алхам дээрх командын `--token`-ийн дараах урт утгыг хуулаад `infra/edge/.env`-ийн
+   `CLOUDFLARE_TUNNEL_TOKEN`-д тавина (cloudflared-ийг тусад нь суулгахгүй — Docker-т байгаа).
+3. **Public Hostname** нэмнэ: Subdomain `media`, Domain `<домэйн>`, Service Type `HTTP`, URL `mediamtx:8889`.
+   DNS record-ийг Cloudflare өөрөө үүсгэнэ. `infra/edge/.env`: `MEDIA_DOMAIN=media.<домэйн>`.
+4. `docker compose -f infra/edge/factory.yml up -d --build`. Dashboard дээр tunnel **HEALTHY** болно.
+
+edge-announcer нь cloudflared Cloudflare-тэй холбогдсон (`/ready` = 200) үед л хаягийг backend-д мэдэгдэнэ. Tunnel тасарвал
+3 минутын дараа backend `MEDIAMTX_PUBLIC_URL` руу буцна.
+
+Token нь tunnel-ийг ажиллуулах эрх — `.env`-д л байна, commit хийхгүй. Алдагдсан бол tunnel-ийн **Refresh token**-оор солино.
 
 ### VPS горим
 
@@ -122,6 +146,9 @@ docker compose -f infra/edge/factory.yml down                   # зогсоох
 ```
 
 - edge-announcer `HTTP 401` = `INTERNAL_API_KEY` backend-тэй таарахгүй. MediaMTX log-д `authentication failed` = `BACKEND_URL` буруу.
+- Named tunnel: edge-announcer "tunnel Cloudflare-тэй холбогдоогүй" гээд хүлээгээд байвал `logs cloudflared`-ийг харна
+  (`Provided Tunnel token is not valid` = `CLOUDFLARE_TUNNEL_TOKEN` буруу). `https://<MEDIA_DOMAIN>` дээр Cloudflare-ийн
+  алдаа 1033 = tunnel холбогдоогүй, 502 = Public Hostname-ийн Service буруу (`HTTP`, `mediamtx:8889` байх ёстой).
 - Dashboard дээр видео гарахгүй бол `chrome://webrtc-internals` (доорх "Шалгах").
 - `LOCAL_WEBCAM` (USB камер) Docker Desktop (Windows/Mac) дээр ажиллахгүй — ai-service-ийг Python-оор шууд асаана.
   Linux дээр нэмэлт файл (жишээ `webcam.yml`: `services: {ai-service: {devices: ["/dev/video0:/dev/video0"]}}`) бичээд
