@@ -1,0 +1,82 @@
+###############################################
+# MediaMTX тохиргоо (v1.21+). Энд бичээгүй түлхүүрүүд MediaMTX-ийн анхдагч утгаа авна.
+#
+# Асаах:  mediamtx infra/mediamtx.yml   (backend-ийг ЭХЛЭЭД асаана: нэвтрэлтийг backend шалгадаг)
+#
+# Видеоны урсгал:
+#   ai-service  --RTSP publish :8554--> cam_<camera_id>  (IP камер, webcam — AI эргүүлсэн зургийг ffmpeg-ээр)
+#   browser     --WHIP :8889--------->  cam_<camera_id>  (BROWSER камер)
+#   ai-service  <--RTSP read :8554----  cam_<camera_id>  (BROWSER камерын видеог AI уншина)
+#   dashboard   <--WHEP :8889---------  cam_<camera_id>
+#
+# IP камерыг ai-service өөрөө татдаг. MediaMTX камер руу шууд холбогдвол ai-service-ийн publish-тэй
+# нэг path дээр мөргөлдөнө, тиймээс path бүр "publisher" горимд байна.
+###############################################
+
+logLevel: info
+
+###############################################
+# Нэвтрэлт: publish/read хүсэлт бүрт backend асууна (backend/app/api/mediamtx.py)
+#   ai-service : user=ai, password=INTERNAL_API_KEY
+#   dashboard  : Authorization: Bearer <read токен>    (тухайн cam_<id>-д л, 2 минут)
+#   browser    : Authorization: Bearer <publish токен> (тухайн cam_<id>-д л)
+# Docker / өөр хост дээр: MTX_AUTHHTTPADDRESS=http://backend:8000/internal/mediamtx/auth
+###############################################
+
+authMethod: http
+authHTTPAddress: http://localhost:8001/internal/mediamtx/auth
+# Хоосон = api/metrics/pprof/playback ч backend-ээр шалгагдана (backend зөвхөн ai-д api-г зөвшөөрдөг)
+authHTTPExclude: []
+
+###############################################
+# RTSP (:8554) — ai-service publish/read
+###############################################
+
+rtsp: true
+# Бүх клиент (ffmpeg -rtsp_transport tcp, OpenCV rtsp_transport;tcp) TCP ашигладаг.
+# UDP-г унтраавал анхдагч rtpAddress :8000 / rtcpAddress :8001 нээгдэхгүй (backend 8001 порттой давхцахгүй).
+rtspTransports: [tcp]
+rtspAddress: :8554
+
+###############################################
+# WebRTC (:8889) — dashboard WHEP, browser камер WHIP
+###############################################
+
+webrtc: true
+webrtcAddress: :8889
+# Browser localhost:3000 / Vercel домэйнээс fetch хийнэ. Хамгаалалтыг backend-ийн токен хийнэ.
+webrtcAllowOrigins: ["*"]
+# Медиа (ICE) UDP порт. Firewall / Docker дээр 8189/udp-г нээнэ.
+webrtcLocalUDPAddress: :8189
+# LAN-ийн өөр компьютерээс үзэх бол энэ машины IP эсвэл домэйн:
+webrtcAdditionalHosts: []
+# NAT-ын ард (өөр сүлжээнээс) үзэх бол STUN:
+webrtcICEServers2: []
+#  - url: stun:stun.l.google.com:19302
+
+###############################################
+# Ашиглагддаггүй серверүүд — унтраалттай (илүү порт нээхгүй)
+###############################################
+
+rtmp: false
+hls: false
+srt: false
+moq: false
+api: false
+metrics: false
+pprof: false
+playback: false
+
+###############################################
+# Path-ууд: зөвхөн backend/ai-service-ийн нэршил cam_<camera_uuid>
+# (backend camera_service.stream_path, ai-service sources.stream_path)
+###############################################
+
+pathDefaults:
+  source: publisher
+  # Камер дахин холбогдоход (ffmpeg restart) хуучин publisher-ийг сольж болно
+  overridePublisher: true
+
+paths:
+  "~^cam_[0-9a-fA-F-]{36}$":
+    source: publisher
