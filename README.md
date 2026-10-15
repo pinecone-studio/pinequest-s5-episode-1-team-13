@@ -100,9 +100,9 @@ npm run dev                                # http://localhost:3000
 | Data, Supabase | Tugserdem | `database/` |
 | AI detection | Anar | `ai-service/` |
 | ML, dataset | Tsenguun | `training/` |
-| Video, Infra (DevOps) | Sumer | `infra/`, `docker-compose.yml` |
+| Video, Infra (DevOps) | Sumer | `infra/` |
 
 ## Хийгдэж буй
 
 - `database/schema.sql`: DB schema (backend-ийн модель үүнтэй 1:1)
-- `infra/`, `docker-compose.yml`: MediaMTX тохиргоо, бүх сервисийг нэг дор асаах
+- `infra/`: MediaMTX тохиргоо, edge-ийг нэг командаар асаах (`infra/edge/`, Docker Compose — [`infra/README.md`](infra/README.md))

@@ -1,0 +1,13 @@
+# VPS горим, үйлдвэрийн компьютер: зөвхөн ai-service (камер уншиж AI ажиллуулаад видеог VPS-ийн MediaMTX руу RTSPS-ээр илгээнэ).
+#   docker compose -f infra/edge/ai.yml up -d --build
+# Тохиргоо: infra/edge/.env (BACKEND_URL, INTERNAL_API_KEY, MEDIAMTX_RTSP_URL, MODEL_FILE) + ai-service/.env
+
+name: pinequest-edge
+
+services:
+  ai-service:
+    extends:
+      file: ai-service.base.yml
+      service: ai-service
+    environment:
+      MEDIAMTX_RTSP_URL: ${MEDIAMTX_RTSP_URL:?infra/edge/.env-д MEDIAMTX_RTSP_URL=rtsps://<MEDIA_DOMAIN>:8322 бөглөнө үү}

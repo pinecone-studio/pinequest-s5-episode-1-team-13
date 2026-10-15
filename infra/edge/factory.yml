@@ -1,0 +1,62 @@
+# Үйлдвэрийн компьютер, бүгд нэг дор: ai-service + MediaMTX + cloudflared quick tunnel + edge-announcer.
+#   docker compose -f infra/edge/factory.yml up -d --build
+# Тохиргоо: infra/edge/.env (BACKEND_URL, INTERNAL_API_KEY, EDGE_HOSTS, MODEL_FILE) + ai-service/.env
+#
+# Browser -> https://<random>.trycloudflare.com (WHEP/WHIP) -> cloudflared -> mediamtx:8889
+# Видео (ICE) нь tunnel-ээр биш шууд 8189/udp, 8189/tcp-ээр явна (өөр сүлжээнээс бол STUN/TURN — infra/README.md).
+
+name: pinequest-edge
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:1.21.2
+    restart: unless-stopped
+    volumes:
+      - ../mediamtx.yml:/mediamtx.yml:ro
+    environment:
+      MTX_AUTHHTTPADDRESS: ${BACKEND_URL:?infra/edge/.env-д BACKEND_URL бөглөнө үү}/internal/mediamtx/auth
+      # Container-ийн IP browser-т хүрэхгүй: энэ компьютерийн LAN IP (таслалаар, port-forward хийсэн бол public IP-г нэмнэ)
+      MTX_WEBRTCADDITIONALHOSTS: ${EDGE_HOSTS:?infra/edge/.env-д EDGE_HOSTS (энэ компьютерийн LAN IP) бөглөнө үү}
+    ports:
+      - "8889:8889"
+      - "8189:8189/udp"
+      - "8189:8189/tcp"
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  ai-service:
+    extends:
+      file: ai-service.base.yml
+      service: ai-service
+    environment:
+      MEDIAMTX_RTSP_URL: rtsp://mediamtx:8554
+    depends_on:
+      - mediamtx
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.0
+    restart: unless-stopped
+    # Quick tunnel: аккаунтгүй, асах бүрт шинэ https://<random>.trycloudflare.com. Хаягийг /quicktunnel-ээс edge-announcer уншина.
+    # Image-ийн entrypoint нь "cloudflared --no-autoupdate"
+    command: tunnel --metrics 0.0.0.0:2000 --url http://mediamtx:8889
+    depends_on:
+      - mediamtx
+    logging: *logging
+
+  edge-announcer:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    command: python /announce.py
+    volumes:
+      - ./announce.py:/announce.py:ro
+    environment:
+      BACKEND_URL: ${BACKEND_URL}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?infra/edge/.env-д INTERNAL_API_KEY бөглөнө үү}
+      CLOUDFLARED_METRICS_URL: http://cloudflared:2000
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      - cloudflared
+    logging: *logging

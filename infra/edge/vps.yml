@@ -1,0 +1,88 @@
+# VPS горим: public IP-тэй сервер дээр MediaMTX + HTTPS (Caddy). Үйлдвэрийн компьютер ai.yml-ээр видеогоо энд илгээнэ.
+#   docker compose -f infra/edge/vps.yml up -d
+# Тохиргоо: infra/edge/.env (BACKEND_URL, INTERNAL_API_KEY, EDGE_HOSTS=<VPS public IP>, MEDIA_DOMAIN)
+#
+# Browser -> https://<MEDIA_DOMAIN> (WHEP/WHIP) -> caddy -> mediamtx:8889; видео шууд <VPS IP>:8189 (udp/tcp)
+# Үйлдвэрийн ai-service -> rtsps://<MEDIA_DOMAIN>:8322 (TLS). Ил RTSP 8554-ийг гадагш нээхгүй: нууц үг нь INTERNAL_API_KEY.
+
+name: pinequest-edge
+
+services:
+  # RTSPS-ийн self-signed сертификатыг нэг удаа үүсгэнэ (10 жил). ffmpeg/OpenCV сертификат шалгахгүй ч траффик шифрлэгдэнэ.
+  rtsps-cert:
+    image: alpine:3.22
+    restart: "no"
+    command:
+      - sh
+      - -c
+      - >-
+        if [ -s /certs/server.crt ] && [ -s /certs/server.key ]; then echo "RTSPS certificate exists";
+        else apk add --no-cache openssl >/dev/null &&
+        openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=${MEDIA_DOMAIN:?infra/edge/.env-д MEDIA_DOMAIN бөглөнө үү}"
+        -keyout /certs/server.key -out /certs/server.crt; fi
+    volumes:
+      - rtsps-certs:/certs
+
+  mediamtx:
+    image: bluenviron/mediamtx:1.21.2
+    restart: unless-stopped
+    volumes:
+      - ../mediamtx.yml:/mediamtx.yml:ro
+      - rtsps-certs:/certs:ro
+    environment:
+      MTX_AUTHHTTPADDRESS: ${BACKEND_URL:?infra/edge/.env-д BACKEND_URL бөглөнө үү}/internal/mediamtx/auth
+      # Container-ийн IP browser-т хүрэхгүй: VPS-ийн public IP
+      MTX_WEBRTCADDITIONALHOSTS: ${EDGE_HOSTS:?infra/edge/.env-д EDGE_HOSTS (VPS-ийн public IP) бөглөнө үү}
+      MTX_RTSPENCRYPTION: optional
+      MTX_RTSPSADDRESS: :8322
+      MTX_RTSPSERVERKEY: /certs/server.key
+      MTX_RTSPSERVERCERT: /certs/server.crt
+    ports:
+      - "8189:8189/udp"
+      - "8189:8189/tcp"
+      - "8322:8322/tcp"
+    depends_on:
+      rtsps-cert:
+        condition: service_completed_successfully
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  caddy:
+    image: caddy:2.11
+    restart: unless-stopped
+    environment:
+      MEDIA_DOMAIN: ${MEDIA_DOMAIN:?infra/edge/.env-д MEDIA_DOMAIN бөглөнө үү}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    depends_on:
+      - mediamtx
+    logging: *logging
+
+  edge-announcer:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    command: python /announce.py
+    volumes:
+      - ./announce.py:/announce.py:ro
+    environment:
+      BACKEND_URL: ${BACKEND_URL}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?infra/edge/.env-д INTERNAL_API_KEY бөглөнө үү}
+      EDGE_PUBLIC_URL: https://${MEDIA_DOMAIN}
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      - caddy
+    logging: *logging
+
+volumes:
+  rtsps-certs:
+  caddy-data:
+  caddy-config:

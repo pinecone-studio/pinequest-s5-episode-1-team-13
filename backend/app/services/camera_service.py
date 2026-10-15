@@ -16,7 +16,7 @@ import hmac
 import logging
 import socket
 import time
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 import cv2
 
@@ -57,6 +57,25 @@ def stream_path(camera_id) -> str:
 
 EDGE_KEY = "mediamtx_edge"
 EDGE_MAX_AGE_SECONDS = 180  # edge машин минут тутам шинэчилнэ; 3 минут чимээгүй бол tunnel унтарсан гэж үзнэ
+EDGE_URL_MAX_LENGTH = 300
+
+
+def clean_edge_url(url: str) -> str | None:
+    """Edge-ийн мэдэгдсэн MediaMTX хаяг: зөвхөн `https://host[:port]` (browser-т шууд очих тул path/query/нууц үг хориглоно)."""
+    url = url.strip().rstrip("/")
+    if len(url) > EDGE_URL_MAX_LENGTH:
+        return None
+    try:
+        parts = urlsplit(url)
+        port = parts.port
+    except ValueError:
+        return None
+    if parts.scheme != "https" or not parts.hostname or parts.username or parts.password:
+        return None
+    if parts.path or parts.query or parts.fragment:
+        return None
+    host = f"[{parts.hostname}]" if ":" in parts.hostname else parts.hostname
+    return f"https://{host}" + (f":{port}" if port else "")
 
 
 def public_media_url(db, now: float | None = None) -> str:

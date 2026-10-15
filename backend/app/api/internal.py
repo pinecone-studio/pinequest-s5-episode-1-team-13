@@ -5,14 +5,16 @@ AI SERVICE -> FASTAPI -> WEBSOCKET -> NEXT.JS
 
 from __future__ import annotations
 
+import time
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel
 
 from app.api.deps import verify_internal_key
 from app.database.database import new_session
-from app.database.models import Camera, Violation
+from app.database.models import AppSetting, Camera, Violation
 from app.services import camera_service
 from app.services import violation_service as svc
 from app.services.frame_store import ai_heartbeat
@@ -57,6 +59,25 @@ async def camera_status(camera_id: uuid.UUID):
     if payload is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Camera not found")
     await manager.broadcast("CAMERA_UPDATED", payload)
+
+
+class EdgeAnnounce(BaseModel):
+    url: str
+
+
+def _save_edge(url: str) -> None:
+    with new_session() as db:
+        db.merge(AppSetting(key=camera_service.EDGE_KEY, value={"url": url, "at": time.time()}))
+        db.commit()
+
+
+@router.put("/edge", status_code=status.HTTP_204_NO_CONTENT)
+async def announce_edge(body: EdgeAnnounce):
+    """Edge (infra/edge/announce.py) MediaMTX-ийн нийтийн HTTPS хаягаа минут тутам мэдэгдэнэ (cloudflared quick tunnel / VPS домэйн)."""
+    url = camera_service.clean_edge_url(body.url)
+    if url is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "url must be https://host[:port]")
+    await run_in_threadpool(_save_edge, url)
 
 
 @router.put("/cameras/{camera_id}/detections", status_code=status.HTTP_204_NO_CONTENT)
