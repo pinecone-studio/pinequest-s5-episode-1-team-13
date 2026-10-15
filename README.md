@@ -51,6 +51,8 @@ cd ai-service
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 cp .env.example .env                       # BACKEND_URL=http://localhost:8001
+# Моделийн .pt файлаа models/ руу хуулаад .env-д MODEL_PATH=models/<model>.pt гэж тохируулна
+python -m scripts.check_model             # модель уншигдаж байгааг шалгана
 python -m app.main
 ```
 
@@ -75,10 +77,10 @@ npm run dev                                # http://localhost:3000
 ## Тест
 
 ```bash
-cd backend && python -m pytest
-cd ai-service && python -m pytest
-cd training && python -m pytest tests
-cd web && npm run lint && npm run typecheck
+(cd backend && python -m pytest)
+(cd ai-service && python -m pytest)
+(cd training && python -m pytest tests)
+(cd web && npm run lint && npm run typecheck)
 ```
 
 ## Хамтран ажиллах дүрэм
