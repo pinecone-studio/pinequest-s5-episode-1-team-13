@@ -1,15 +1,35 @@
+// Хуучин backend ice_servers буцаахгүй бол: STUN — MediaMTX өөр сүлжээнд (NAT-ын ард) байхад public хаягаа олж шууд холбогдоно
+const DEFAULT_ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
+
+// TURN relay candidate нь TURN сервертэй allocation хийсний дараа л гарна — түүнийг алдахгүйн тулд удаан хүлээнэ
+function gatherTimeoutMs(iceServers: RTCIceServer[]): number {
+  const hasTurn = iceServers.some((server) => [server.urls].flat().some((url) => url.startsWith("turn")));
+  return hasTurn ? 3000 : 1500;
+}
+
+// ICE candidate-үүдийг цуглуулж дуустал (хамгийн ихдээ timeoutMs) хүлээнэ
+function waitForIceGathering(pc: RTCPeerConnection, timeoutMs: number): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (pc.iceGatheringState === "complete") return resolve();
+    const done = () => pc.iceGatheringState === "complete" && (pc.removeEventListener("icegatheringstatechange", done), resolve());
+    pc.addEventListener("icegatheringstatechange", done);
+    setTimeout(resolve, timeoutMs);
+  });
+}
+
 /**
  * WHEP (WebRTC-HTTP Egress Protocol) клиент — MediaMTX-ээс камерын видеог авна.
  * Нэвтрэлт: backend-ийн өгсөн богино хугацаатай Bearer токен (тухайн камерын path-д л хүчинтэй).
+ * iceServers: backend-ийн өгсөн STUN + TURN (TURN-ийн credential богино хугацаатай).
  */
 export async function startWhep(
   whepUrl: string,
   token: string,
   onStream: (stream: MediaStream) => void,
   onClosed: () => void,
+  iceServers: RTCIceServer[] = DEFAULT_ICE_SERVERS,
 ): Promise<RTCPeerConnection> {
-  // STUN: MediaMTX өөр сүлжээнд (NAT-ын ард) байхад public хаягаа олж шууд холбогдоно
-  const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+  const pc = new RTCPeerConnection({ iceServers });
   pc.addTransceiver("video", { direction: "recvonly" });
   pc.ontrack = (event) => {
     // Browser-ийн буферийг (jitter buffer) хамгийн бага болгоно: видео илрүүлэлтийн хайрцгаас хоцрохгүй, гацахгүй
@@ -29,13 +49,7 @@ export async function startWhep(
 
   try {
     await pc.setLocalDescription(await pc.createOffer());
-    // ICE candidate-үүдийг цуглуулж дуустал (хамгийн ихдээ 1.5 сек) хүлээнэ
-    await new Promise<void>((resolve) => {
-      if (pc.iceGatheringState === "complete") return resolve();
-      const done = () => pc.iceGatheringState === "complete" && (pc.removeEventListener("icegatheringstatechange", done), resolve());
-      pc.addEventListener("icegatheringstatechange", done);
-      setTimeout(resolve, 1500);
-    });
+    await waitForIceGathering(pc, gatherTimeoutMs(iceServers));
 
     const response = await fetch(whepUrl, {
       method: "POST",
@@ -55,8 +69,14 @@ export async function startWhep(
  * WHIP (WebRTC-HTTP Ingestion Protocol) — энэ browser-ийн камерыг MediaMTX руу дамжуулна (BROWSER камер).
  * Нэвтрэлт: backend-ийн тухайн камерт л хүчинтэй publish токен.
  */
-export async function startWhip(whipUrl: string, token: string, stream: MediaStream, onClosed: () => void): Promise<RTCPeerConnection> {
-  const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+export async function startWhip(
+  whipUrl: string,
+  token: string,
+  stream: MediaStream,
+  onClosed: () => void,
+  iceServers: RTCIceServer[] = DEFAULT_ICE_SERVERS,
+): Promise<RTCPeerConnection> {
+  const pc = new RTCPeerConnection({ iceServers });
   // AI-д 30 fps хэрэггүй: 15 fps / ~1.2 Mbps-ээр хязгаарлавал tunnel/NAT-аар гацахгүй, латент багатай (хөдөлгөөн бага хугацаанд л хоцорно)
   stream.getVideoTracks().forEach((track) =>
     pc.addTransceiver(track, { direction: "sendonly", sendEncodings: [{ maxBitrate: 1_200_000, maxFramerate: 15 }] }),
@@ -68,12 +88,7 @@ export async function startWhip(whipUrl: string, token: string, stream: MediaStr
 
   try {
     await pc.setLocalDescription(await pc.createOffer());
-    await new Promise<void>((resolve) => {
-      if (pc.iceGatheringState === "complete") return resolve();
-      const done = () => pc.iceGatheringState === "complete" && (pc.removeEventListener("icegatheringstatechange", done), resolve());
-      pc.addEventListener("icegatheringstatechange", done);
-      setTimeout(resolve, 1500);
-    });
+    await waitForIceGathering(pc, gatherTimeoutMs(iceServers));
 
     const response = await fetch(whipUrl, {
       method: "POST",

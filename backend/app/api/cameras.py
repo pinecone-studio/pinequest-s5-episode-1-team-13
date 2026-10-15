@@ -228,6 +228,7 @@ def webrtc_access(camera_id: uuid.UUID, db: Session = Depends(get_db), _: User =
         "whep_url": f"{camera_service.public_media_url(db)}/{path}/whep",
         "token": create_stream_token(path),
         "expires_in": settings.stream_token_expire_seconds,
+        "ice_servers": camera_service.ice_servers(),
     }
 
 
@@ -243,4 +244,5 @@ def publish_access(camera_id: uuid.UUID, db: Session = Depends(get_db), user: Us
         "whip_url": f"{camera_service.public_media_url(db)}/{path}/whip",
         "token": create_stream_token(path, "publish"),
         "expires_in": settings.stream_token_expire_seconds,
+        "ice_servers": camera_service.ice_servers(),
     }

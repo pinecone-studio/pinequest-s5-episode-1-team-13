@@ -169,3 +169,64 @@ def test_ws_token_is_not_a_session_token_and_vice_versa():
     ws, session = create_ws_token("user-1"), create_access_token("user-1")
     assert decode_ws_token(ws) == "user-1" and decode_access_token(ws) is None  # cookie-д хийгээд нэвтэрч болохгүй
     assert decode_ws_token(session) is None
+
+
+# ------------------------------------------------------------------ WebRTC ICE серверүүд (STUN / TURN)
+def _ice(monkeypatch, **overrides):
+    from types import SimpleNamespace
+
+    from app.services import camera_service
+
+    values = {
+        "webrtc_stun_urls": "stun:stun.l.google.com:19302",
+        "turn_urls": "",
+        "turn_secret": "",
+        "turn_username": "",
+        "turn_password": "",
+        "turn_credential_ttl_seconds": 86400,
+    } | overrides
+    monkeypatch.setattr(camera_service, "get_settings", lambda: SimpleNamespace(**values))
+    return camera_service
+
+
+def test_ice_servers_default_is_stun_only(monkeypatch):
+    svc = _ice(monkeypatch)
+    assert svc.ice_servers() == [{"urls": ["stun:stun.l.google.com:19302"]}]
+    assert svc.ice_config_warnings() == []
+    assert _ice(monkeypatch, webrtc_stun_urls="").ice_servers() == []
+
+
+def test_turn_secret_gives_coturn_time_limited_credentials(monkeypatch):
+    import base64
+    import hashlib
+    import hmac
+
+    turn = "turn:turn.example.com:3478?transport=udp, turns:turn.example.com:5349"
+    svc = _ice(monkeypatch, turn_urls=turn, turn_secret="s3cret", turn_credential_ttl_seconds=600)
+    stun, relay = svc.ice_servers(now=1000.0)
+    assert stun == {"urls": ["stun:stun.l.google.com:19302"]}
+    assert relay["urls"] == ["turn:turn.example.com:3478?transport=udp", "turns:turn.example.com:5349"]
+    assert relay["username"] == "1600:pinequest"
+    expected = base64.b64encode(hmac.new(b"s3cret", b"1600:pinequest", hashlib.sha1).digest()).decode()
+    assert relay["credential"] == expected and "s3cret" not in str(relay)  # нууц өөрөө browser-т очихгүй
+
+
+def test_turn_static_credentials_and_missing_credentials(monkeypatch):
+    svc = _ice(monkeypatch, turn_urls="turn:t.example.com:3478", turn_username="u", turn_password="p")
+    assert svc.ice_servers()[1] == {"urls": ["turn:t.example.com:3478"], "username": "u", "credential": "p"}
+
+    svc = _ice(monkeypatch, turn_urls="turn:t.example.com:3478", turn_username="u")  # нууц үггүй
+    assert svc.ice_servers() == [{"urls": ["stun:stun.l.google.com:19302"]}]
+    assert any("TURN_SECRET" in w for w in svc.ice_config_warnings())
+
+
+def test_ice_servers_drop_invalid_urls(monkeypatch):
+    svc = _ice(
+        monkeypatch,
+        webrtc_stun_urls="stun:ok.example.com:3478, http://bad.example.com, ",
+        turn_urls="turn.example.com:3478",
+        turn_secret="s",
+    )
+    assert svc.ice_servers() == [{"urls": ["stun:ok.example.com:3478"]}]
+    warnings = svc.ice_config_warnings()
+    assert any("http://bad.example.com" in w for w in warnings) and any("turn.example.com:3478" in w for w in warnings)

@@ -304,6 +304,7 @@ def test_internal_endpoints_and_websocket(client, admin):
         access = admin.get(f"/api/cameras/{cam['id']}/webrtc").json()
         path = f"cam_{cam['id']}"
         assert access["whep_url"].endswith(f"/{path}/whep") and access["token"] and "rtsp" not in str(access).lower()
+        assert isinstance(access["ice_servers"], list) and all(server["urls"] for server in access["ice_servers"])
 
         def auth(**kw):
             return client.post("/internal/mediamtx/auth", json={"action": "read", "path": path, "protocol": "webrtc", **kw}).status_code

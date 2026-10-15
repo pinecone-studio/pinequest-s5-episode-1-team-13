@@ -32,6 +32,16 @@ class Settings(BaseSettings):
     # Browser-ийн холбогдох MediaMTX WebRTC (WHEP) хаяг. LAN/production дээр домэйнээр солино.
     mediamtx_public_url: str = "http://localhost:8889"
     stream_token_expire_seconds: int = Field(120, ge=30, le=900)
+    # Browser-ийн WebRTC ICE серверүүд (таслалаар). Хоосон STUN = зөвхөн шууд/TURN холболт.
+    webrtc_stun_urls: str = "stun:stun.l.google.com:19302"
+    # TURN: шууд холбогдож чадахгүй (symmetric NAT, UDP хаалттай) үед видеог дамжуулна. Хоосон = TURN-гүй.
+    turn_urls: str = ""
+    # coturn use-auth-secret: static-auth-secret-ээс хэрэглэгч бүрт богино хугацаатай credential үүсгэнэ (нууц browser-т очихгүй)
+    turn_secret: str = ""
+    # TURN_SECRET байхгүй үед: үйлчилгээний өгсөн статик credential
+    turn_username: str = ""
+    turn_password: str = ""
+    turn_credential_ttl_seconds: int = Field(86400, ge=300, le=172800)
     # false = backend камертай өөр сүлжээнд (cloud) — холболтын тестийг backend-ээс хийхгүй, AI service шалгана
     camera_probe_enabled: bool = True
     # Login хуудасны "Demo" товч: энэ имэйлтэй HUB_EMPLOYEE (админ биш) хэрэглэгчээр нууц үггүй нэвтэрнэ
