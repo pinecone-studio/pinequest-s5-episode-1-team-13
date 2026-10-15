@@ -33,7 +33,13 @@ def test_inside_and_feet():
     assert inside((5, 5), poly) and not inside((15, 5), poly) and not inside((5, -1), poly)
     triangle = ((0, 0), (10, 0), (0, 10))
     assert inside((2, 2), triangle) and not inside((8, 8), triangle)
-    assert feet((10, 20, 30, 100)) == (20, 100)
+    assert feet((10, 20, 30, 100)) == (20, 98.4)
+
+
+def test_person_cut_off_by_the_bottom_edge_is_caught():
+    p = person((120, 60, 180, 200))  # box ends exactly at the bottom of a 200 px picture
+    mark([p], [((0.5, 0.5), (1.0, 0.5), (1.0, 0.99), (0.5, 0.99))], 200, 200)  # area clicked a bit above the edge
+    assert p.restricted
 
 
 def test_feet_decide_not_the_head():

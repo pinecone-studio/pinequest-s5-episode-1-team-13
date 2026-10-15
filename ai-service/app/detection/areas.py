@@ -65,8 +65,10 @@ def to_pixels(polygon: Polygon, width: int, height: int) -> tuple[tuple[int, int
 
 
 def feet(box: Box) -> Point:
-    x1, _, x2, y2 = box
-    return (x1 + x2) / 2, y2
+    """Bottom middle of the box, a little inside it: a person cut off by the bottom of the picture still has feet
+    *inside* the frame, so an area drawn up to the bottom edge catches them."""
+    x1, y1, x2, y2 = box
+    return (x1 + x2) / 2, y2 - 0.02 * (y2 - y1)
 
 
 def inside(point: Point, polygon: Sequence[Sequence[float]]) -> bool:
