@@ -1,0 +1,44 @@
+# Үйлдвэрийн компьютер, домэйнгүй (демо): ai-service + MediaMTX + cloudflared quick tunnel + edge-announcer.
+#   docker compose -f infra/edge/factory-quick.yml up -d --build
+# Тохиргоо: infra/edge/.env (BACKEND_URL, INTERNAL_API_KEY, EDGE_HOSTS, MODEL_FILE) + ai-service/.env
+#
+# Browser -> https://<random>.trycloudflare.com (WHEP/WHIP) -> cloudflared -> mediamtx:8889
+# Хаяг cloudflared асах бүрт солигдоно: edge-announcer шинэ хаягийг backend-д мэдэгдэнэ. Тогтмол домэйн: factory.yml
+
+name: pinequest-edge
+
+services:
+  mediamtx:
+    extends:
+      file: factory.base.yml
+      service: mediamtx
+
+  ai-service:
+    extends:
+      file: ai-service.base.yml
+      service: ai-service
+    environment:
+      MEDIAMTX_RTSP_URL: rtsp://mediamtx:8554
+    depends_on:
+      - mediamtx
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.0
+    restart: unless-stopped
+    # Quick tunnel: аккаунтгүй, асах бүрт шинэ https://<random>.trycloudflare.com. Хаягийг /quicktunnel-ээс edge-announcer уншина.
+    # Image-ийн entrypoint нь "cloudflared --no-autoupdate"
+    command: tunnel --metrics 0.0.0.0:2000 --url http://mediamtx:8889
+    depends_on:
+      - mediamtx
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  edge-announcer:
+    extends:
+      file: factory.base.yml
+      service: edge-announcer
+    depends_on:
+      - cloudflared

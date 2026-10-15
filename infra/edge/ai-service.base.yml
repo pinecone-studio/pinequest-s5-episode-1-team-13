@@ -1,4 +1,4 @@
-# ai-service-ийн нийтлэг тодорхойлолт. Шууд асаахгүй: ai.yml, factory.yml extends-ээр ашиглана.
+# ai-service-ийн нийтлэг тодорхойлолт. Шууд асаахгүй: ai.yml, factory.yml, factory-quick.yml extends-ээр ашиглана.
 # MEDIAMTX_RTSP_URL-ийг энд бичихгүй — горим бүр өөрөө өгнө (extends эх файлыг бүтнээр нь interpolate хийдэг).
 
 services:
