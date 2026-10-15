@@ -15,6 +15,7 @@ from app.cameras.models import CameraInfo
 from app.cameras.publisher import VideoPublisher
 from app.cameras.reader import FrameReader
 from app.cameras.sources import mediamtx_url, source_for
+from app.cameras.stats import CameraStats
 from app.config import Settings
 from app.db import Database
 from app.detection.pipeline import CameraAI
@@ -30,6 +31,7 @@ class CameraWorker(threading.Thread):
         self._stop = threading.Event()
         self._status: str | None = None
         self.ai = ai
+        self.stats = CameraStats(camera.name, settings.stats_seconds, time.time())
         source = source_for(camera, settings.mediamtx_rtsp_url, settings.internal_api_key)
         self.reader = FrameReader(source, camera.name)
         self.publisher = None
@@ -59,7 +61,10 @@ class CameraWorker(threading.Thread):
     def handle_frame(self, frame: np.ndarray, now: float) -> None:
         """AI processing hook. `frame` is already rotated upright."""
         if self.ai is not None:
-            self.ai.process(frame, self.camera, now)
+            started = time.perf_counter()
+            people = self.ai.process(frame, self.camera, now)
+            if people is not None:  # the model really ran on this frame
+                self.stats.ai_step((time.perf_counter() - started) * 1000, len(people), sum(p.violation for p in people))
 
     def run(self) -> None:
         self._report("CONNECTING")
@@ -73,12 +78,14 @@ class CameraWorker(threading.Thread):
                 self._report(self.reader.state)
                 if frame is not None and seq != last_seq:
                     last_seq = seq
+                    self.stats.frame()
                     if self.publisher is not None:
                         self.publisher.send(frame)  # raw video; the dashboard rotates/mirrors it itself
                     try:
                         self.handle_frame(rotate(frame, self.camera.rotation), started)
                     except Exception:  # noqa: BLE001
                         logger.exception("AI step failed for %s", self.camera.name)
+                self.stats.maybe_log(time.time(), self._status or "?")
                 self._stop.wait(max(0.0, interval - (time.time() - started)))
         finally:
             self.reader.stop()

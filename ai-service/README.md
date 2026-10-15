@@ -30,6 +30,14 @@ can't play IP cameras and webcams.
 | LOCAL_WEBCAM | device number (`0`, `1`) | MediaMTX `cam_<id>` (AI publishes it) |
 | BROWSER | MediaMTX `cam_<id>` (user `ai`, password = `INTERNAL_API_KEY`) | MediaMTX (the browser publishes it) |
 
+Every `STATS_SECONDS` (default 60, `0` = off) each camera logs one line:
+
+```
+Gate | video 14.8 fps | AI 3.0/s, 41 ms avg, 63 ms max | people max 2 | violation frames 4 | status STREAMING
+```
+
+Low video fps = network/camera problem. High AI ms = model too slow (try `DEVICE`, ONNX or a smaller `IMGSZ`).
+
 The camera list is re-read every `CAMERA_REFRESH_SECONDS`. Each camera runs in its own thread and reconnects by itself.
 If MediaMTX is down, the AI waits longer between tries (5 s, 10 s, 20 s … up to 60 s) and goes back to 5 s once
 publishing has worked for 30 s.

@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     publish_fps: int = Field(15, ge=1, le=30)
     # Re-read the camera list from the database this often (seconds). New/removed/rotated cameras apply within this time.
     camera_refresh_seconds: float = Field(10, ge=2, le=300)
+    # One stats line per camera this often (seconds). 0 = off.
+    stats_seconds: float = Field(60, ge=0, le=3600)
 
     # YOLO model (.pt or .onnx). Relative paths start from the ai-service folder.
     model_path: str = ""
