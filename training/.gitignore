@@ -1,0 +1,7 @@
+# Хүмүүсийн зураг, сургалтын гаралт, жин — git-д орохгүй
+datasets/
+runs/
+models/*.pt
+models/*.onnx
+__pycache__/
+.pytest_cache/
