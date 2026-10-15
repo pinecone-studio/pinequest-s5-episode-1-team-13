@@ -54,7 +54,7 @@ class FakeReporter:
     def __init__(self):
         self.saved = []
 
-    def submit(self, camera, frame, person, vtype):
+    def submit(self, camera, frame, person, vtype, others=()):
         self.saved.append(vtype)
 
 

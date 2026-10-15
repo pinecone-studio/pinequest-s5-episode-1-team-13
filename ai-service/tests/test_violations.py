@@ -6,7 +6,9 @@ from app.detection.types import PersonResult
 from app.storage import SnapshotStorage, snapshot_path
 from app.violations.reporter import ViolationReporter
 from app.violations.rules import NO_HELMET, NO_WORK_UNIFORM, ViolationRules
-from app.violations.snapshot import make_snapshot
+import cv2
+
+from app.violations.snapshot import face_area, make_snapshot
 
 
 def bare(pid=1, helmet_required=True, uniform="YES"):
@@ -48,6 +50,49 @@ def test_office_helmet_and_both_types():
 def test_snapshot_is_jpeg():
     data = make_snapshot(np.zeros((200, 100, 3), dtype=np.uint8), bare(), NO_HELMET)
     assert data[:3] == b"\xff\xd8\xff"
+
+
+def noisy(h=300, w=200):
+    return np.random.default_rng(0).integers(0, 255, (h, w, 3), dtype=np.uint8)
+
+
+def decode(data):
+    return cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+
+
+def detail(image, area):
+    x1, y1, x2, y2 = area
+    return float(np.abs(np.diff(image[y1:y2, x1:x2].astype(int), axis=1)).mean())
+
+
+def test_bare_head_face_is_hidden_but_top_of_head_stays():
+    person = PersonResult(id=1, box=(20, 20, 180, 290), conf=0.9, helmet="NO", helmet_box=(60, 25, 140, 105))
+    x1, y1, x2, y2 = face_area(person)
+    assert y1 > 25 + 20 and y2 >= 105  # lower part of the head box only
+    frame = noisy()
+    blurred = decode(make_snapshot(frame, person, NO_HELMET, quality=100))
+    sharp = decode(make_snapshot(frame, person, NO_HELMET, quality=100, blur_faces=False))
+    face = (x1 + 4, y1 + 4, x2 - 4, y2 - 4)
+    assert detail(blurred, face) < detail(sharp, face) / 3
+    top = (70, 30, 130, y1 - 4)  # hair: still there as proof of no helmet
+    assert detail(blurred, top) > detail(sharp, top) / 2
+
+
+def test_helmet_face_is_under_the_helmet_and_inside_the_person():
+    person = PersonResult(id=1, box=(20, 20, 180, 290), conf=0.9, helmet="YES", helmet_box=(60, 25, 140, 65))
+    x1, y1, x2, y2 = face_area(person)
+    assert 55 <= y1 <= 65 < y2 and x1 >= 20 and x2 <= 180
+
+
+def test_others_in_the_frame_are_hidden_too():
+    person = PersonResult(id=1, box=(0, 0, 90, 290), conf=0.9, helmet="NO", helmet_box=(20, 5, 70, 55))
+    other = PersonResult(id=2, box=(110, 10, 200, 290), conf=0.9)  # no head box: top of the body box
+    frame = noisy()
+    x1, y1, x2, y2 = face_area(other)
+    area = (x1 + 3, y1 + 3, x2 - 3, y2 - 3)
+    sharp = detail(frame, area)
+    assert detail(decode(make_snapshot(frame, person, NO_HELMET, quality=100, others=[other])), area) < sharp / 3
+    assert detail(decode(make_snapshot(frame, person, NO_HELMET, quality=100)), area) > sharp / 2
 
 
 def test_storage_upload_request():

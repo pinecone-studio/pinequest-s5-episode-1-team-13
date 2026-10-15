@@ -157,3 +157,10 @@ python -m scripts.prelabel walk.mp4 --every 0.5 --only-hard
 
 Pictures go to `training/datasets/raw`, the model's guesses to `labels_auto`. Then check and fix the boxes on the
 Training page and train. Near-duplicate video frames are skipped.
+
+## Privacy: faces are hidden in violation pictures
+
+`BLUR_FACES=true` (default) pixelates the faces of everyone in a saved violation picture. There is no face detector:
+the face area comes from the head box the model found (under a helmet, or the lower part of a bare head) or, without
+a head box, the top fifth of the person box. The top of a bare head stays visible, so the picture still proves the
+violation. Live video on the dashboard is not changed.

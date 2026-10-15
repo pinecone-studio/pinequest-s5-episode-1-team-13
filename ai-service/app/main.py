@@ -67,7 +67,7 @@ def main() -> int:
     storage = SnapshotStorage(settings.supabase_url, settings.supabase_service_role_key, settings.supabase_storage_bucket)
     if not storage.enabled:
         logger.warning("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set: violations are saved WITHOUT snapshot pictures")
-    reporter = ViolationReporter(db, storage, client)
+    reporter = ViolationReporter(db, storage, client, blur_faces=settings.blur_faces)
     collection = CollectionConfig(db)
     dataset_root = settings.resolved_dataset_dir
     image_counter = ImageCounter(dataset_root / "datasets" / "raw")

@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     # Frames darker / blurrier than this are not used for violations or training pictures (0 = check off)
     min_brightness: float = Field(35, ge=0, le=255)
     min_sharpness: float = Field(25, ge=0, le=5000)
+    # Pixelate faces in violation pictures (privacy). The top of a bare head stays visible as proof.
+    blur_faces: bool = True
 
     # Supabase Storage for snapshot pictures (same as backend/.env)
     supabase_url: str = ""

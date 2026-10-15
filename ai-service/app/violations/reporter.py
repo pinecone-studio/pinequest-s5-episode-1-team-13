@@ -6,6 +6,7 @@ Runs in a small background pool so a slow upload never freezes the camera video.
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
@@ -28,17 +29,26 @@ RETURNING id::text
 
 
 class ViolationReporter:
-    def __init__(self, db: Database, storage: SnapshotStorage, client: BackendClient, workers: int = 2) -> None:
+    def __init__(
+        self, db: Database, storage: SnapshotStorage, client: BackendClient, workers: int = 2, blur_faces: bool = True
+    ) -> None:
         self._db, self._storage, self._client = db, storage, client
+        self._blur_faces = blur_faces
         self._pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="violation")
 
-    def submit(self, camera: CameraInfo, frame: np.ndarray, person: PersonResult, vtype: str) -> None:
-        self._pool.submit(self._save, camera, frame, person, vtype)
+    def submit(
+        self, camera: CameraInfo, frame: np.ndarray, person: PersonResult, vtype: str, others: Sequence[PersonResult] = ()
+    ) -> None:
+        """others = everyone else in the frame (their faces are hidden in the picture too)."""
+        self._pool.submit(self._save, camera, frame, person, vtype, tuple(others))
 
-    def _save(self, camera: CameraInfo, frame: np.ndarray, person: PersonResult, vtype: str) -> str | None:
+    def _save(
+        self, camera: CameraInfo, frame: np.ndarray, person: PersonResult, vtype: str, others: Sequence[PersonResult] = ()
+    ) -> str | None:
         try:
             path = snapshot_path(camera.id)
-            if not self._storage.upload(path, make_snapshot(frame, person, vtype)):
+            picture = make_snapshot(frame, person, vtype, others=others, blur_faces=self._blur_faces)
+            if not self._storage.upload(path, picture):
                 path = None  # still save the violation, just without a picture
             confidence = person.helmet_conf if vtype == NO_HELMET else person.uniform_conf
             person_id = str(person.id) if person.id is not None else None

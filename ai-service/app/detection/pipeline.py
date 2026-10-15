@@ -79,7 +79,7 @@ class CameraAI:
         if problem is None:
             if self._rules is not None and self._reporter is not None:
                 for vtype, person in self._rules.update(people, now):
-                    self._reporter.submit(camera, frame, person, vtype)
+                    self._reporter.submit(camera, frame, person, vtype, [p for p in people if p is not person])
             if self._collector is not None:
                 self._collector.maybe_save(frame, camera.name, camera.id, detections, now)
         return people
