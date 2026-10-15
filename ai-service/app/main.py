@@ -79,6 +79,7 @@ def main() -> int:
         return CameraAI(
             client, make_detector, settings.detect_fps, rules=rules, reporter=reporter, collector=collector, motion=motion,
             min_brightness=settings.min_brightness, min_sharpness=settings.min_sharpness,
+            no_conf=settings.no_conf_threshold,
         )  # fmt: skip
 
     manager = CameraManager(
