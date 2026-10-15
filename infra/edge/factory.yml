@@ -1,31 +1,18 @@
-# Үйлдвэрийн компьютер, бүгд нэг дор: ai-service + MediaMTX + cloudflared quick tunnel + edge-announcer.
+# Үйлдвэрийн компьютер, бүгд нэг дор: ai-service + MediaMTX + cloudflared named tunnel + edge-announcer.
 #   docker compose -f infra/edge/factory.yml up -d --build
-# Тохиргоо: infra/edge/.env (BACKEND_URL, INTERNAL_API_KEY, EDGE_HOSTS, MODEL_FILE) + ai-service/.env
+# Тохиргоо: infra/edge/.env (BACKEND_URL, INTERNAL_API_KEY, EDGE_HOSTS, MODEL_FILE, MEDIA_DOMAIN, CLOUDFLARE_TUNNEL_TOKEN) + ai-service/.env
+# Домэйнгүй үед (демо): factory-quick.yml
 #
-# Browser -> https://<random>.trycloudflare.com (WHEP/WHIP) -> cloudflared -> mediamtx:8889
+# Browser -> https://<MEDIA_DOMAIN> (WHEP/WHIP, тогтмол хаяг) -> Cloudflare -> cloudflared -> mediamtx:8889
 # Видео (ICE) нь tunnel-ээр биш шууд 8189/udp, 8189/tcp-ээр явна (өөр сүлжээнээс бол STUN/TURN — infra/README.md).
 
 name: pinequest-edge
 
 services:
   mediamtx:
-    image: bluenviron/mediamtx:1.21.2
-    restart: unless-stopped
-    volumes:
-      - ../mediamtx.yml:/mediamtx.yml:ro
-    environment:
-      MTX_AUTHHTTPADDRESS: ${BACKEND_URL:?infra/edge/.env-д BACKEND_URL бөглөнө үү}/internal/mediamtx/auth
-      # Container-ийн IP browser-т хүрэхгүй: энэ компьютерийн LAN IP (таслалаар, port-forward хийсэн бол public IP-г нэмнэ)
-      MTX_WEBRTCADDITIONALHOSTS: ${EDGE_HOSTS:?infra/edge/.env-д EDGE_HOSTS (энэ компьютерийн LAN IP) бөглөнө үү}
-    ports:
-      - "8889:8889"
-      - "8189:8189/udp"
-      - "8189:8189/tcp"
-    logging: &logging
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: "3"
+    extends:
+      file: factory.base.yml
+      service: mediamtx
 
   ai-service:
     extends:
@@ -39,24 +26,25 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:2026.10.0
     restart: unless-stopped
-    # Quick tunnel: аккаунтгүй, асах бүрт шинэ https://<random>.trycloudflare.com. Хаягийг /quicktunnel-ээс edge-announcer уншина.
-    # Image-ийн entrypoint нь "cloudflared --no-autoupdate"
-    command: tunnel --metrics 0.0.0.0:2000 --url http://mediamtx:8889
+    # Named tunnel: Cloudflare Zero Trust дээр үүсгэсэн tunnel, Public Hostname <MEDIA_DOMAIN> -> http://mediamtx:8889.
+    # Token-ийг command-д биш env-ээр өгнө. Image-ийн entrypoint нь "cloudflared --no-autoupdate".
+    command: tunnel --metrics 0.0.0.0:2000 run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?infra/edge/.env-д CLOUDFLARE_TUNNEL_TOKEN бөглөнө үү (домэйнгүй бол factory-quick.yml)}
     depends_on:
       - mediamtx
-    logging: *logging
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
   edge-announcer:
-    image: python:3.12-alpine
-    restart: unless-stopped
-    command: python /announce.py
-    volumes:
-      - ./announce.py:/announce.py:ro
+    extends:
+      file: factory.base.yml
+      service: edge-announcer
     environment:
-      BACKEND_URL: ${BACKEND_URL}
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?infra/edge/.env-д INTERNAL_API_KEY бөглөнө үү}
-      CLOUDFLARED_METRICS_URL: http://cloudflared:2000
-      PYTHONUNBUFFERED: "1"
+      # cloudflared /ready = 200 (Cloudflare-тэй холбогдсон) үед л мэдэгдэнэ
+      EDGE_PUBLIC_URL: https://${MEDIA_DOMAIN:?infra/edge/.env-д MEDIA_DOMAIN (tunnel-ийн Public Hostname) бөглөнө үү}
     depends_on:
       - cloudflared
-    logging: *logging

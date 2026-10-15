@@ -73,7 +73,7 @@ def _save_edge(url: str) -> None:
 
 @router.put("/edge", status_code=status.HTTP_204_NO_CONTENT)
 async def announce_edge(body: EdgeAnnounce):
-    """Edge (infra/edge/announce.py) MediaMTX-ийн нийтийн HTTPS хаягаа минут тутам мэдэгдэнэ (cloudflared quick tunnel / VPS домэйн)."""
+    """Edge (infra/edge/announce.py) MediaMTX-ийн нийтийн HTTPS хаягаа минут тутам мэдэгдэнэ (cloudflared named/quick tunnel, VPS домэйн)."""
     url = camera_service.clean_edge_url(body.url)
     if url is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "url must be https://host[:port]")

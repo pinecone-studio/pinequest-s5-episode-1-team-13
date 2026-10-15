@@ -1,0 +1,40 @@
+# factory.yml (named tunnel), factory-quick.yml (quick tunnel)-ийн хуваалцсан service-үүд. Шууд асаахгүй.
+# extends нь энэ файлыг бүтнээр нь interpolate хийдэг тул tunnel-ийн горимд хамаарах ${VAR:?} энд бичихгүй.
+# depends_on extends-ээр дамждаггүй: extend хийж буй файлд бичнэ.
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:1.21.2
+    restart: unless-stopped
+    volumes:
+      - ../mediamtx.yml:/mediamtx.yml:ro
+    environment:
+      MTX_AUTHHTTPADDRESS: ${BACKEND_URL:?infra/edge/.env-д BACKEND_URL бөглөнө үү}/internal/mediamtx/auth
+      # Container-ийн IP browser-т хүрэхгүй: энэ компьютерийн LAN IP (таслалаар, port-forward хийсэн бол public IP-г нэмнэ)
+      MTX_WEBRTCADDITIONALHOSTS: ${EDGE_HOSTS:?infra/edge/.env-д EDGE_HOSTS (энэ компьютерийн LAN IP) бөглөнө үү}
+    ports:
+      - "8889:8889"
+      - "8189:8189/udp"
+      - "8189:8189/tcp"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  edge-announcer:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    command: python /announce.py
+    volumes:
+      - ./announce.py:/announce.py:ro
+    environment:
+      BACKEND_URL: ${BACKEND_URL}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?infra/edge/.env-д INTERNAL_API_KEY бөглөнө үү}
+      CLOUDFLARED_METRICS_URL: http://cloudflared:2000
+      PYTHONUNBUFFERED: "1"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
