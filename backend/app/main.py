@@ -17,6 +17,7 @@ from app.config import get_settings
 from app.core.logging import setup_logging
 from app.database.database import get_engine, new_session
 from app.services import camera_service
+from app.services.alerts import alert_loop
 from app.services.retention import retention_loop
 from app.websocket.manager import manager
 
@@ -46,10 +47,12 @@ async def lifespan(_: FastAPI):
     get_engine()
     logger.info("Backend started (env=%s, origins=%s)", settings.app_env, settings.cors_origin_list)
     purge_task = asyncio.create_task(retention_loop())
+    alert_task = asyncio.create_task(alert_loop())
     try:
         yield
     finally:
         purge_task.cancel()
+        alert_task.cancel()
 
 
 app = FastAPI(

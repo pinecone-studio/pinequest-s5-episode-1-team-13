@@ -1,0 +1,7 @@
+# Commit хийхээс өмнө staged өөрчлөлтөд нууц утга байгаа эсэхийг gitleaks-ээр шалгана (.gitleaks.toml). SECURITY.md
+#   pip install pre-commit && pre-commit install      # нэг удаа, repo-ийн root-оос (Go-г pre-commit өөрөө суулгана)
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

@@ -74,7 +74,8 @@ npm run dev                                # http://localhost:3000
 - `.env`, `.env.local` файлуудыг **хэзээ ч commit хийхгүй**. Root-ийн `.gitignore` хааж байгаа.
 - Жишээ файлууд: `backend/.env.example`, `ai-service/.env.example`, `web/.env.local.example`
 - `INTERNAL_API_KEY` ба `CAMERA_SECRET_KEY` нь `backend/.env` болон `ai-service/.env` хоёрт **ижил** байх ёстой.
-- Бодит утгуудыг багаасаа password manager эсвэл хувийн мессежээр авна.
+- Бодит утгуудыг зөвхөн багийн password manager-аас авна — chat, мессежээр хэзээ ч дамжуулахгүй.
+- Нууц түлхүүр удирдах, солих, мониторинг ба alert: [`SECURITY.md`](SECURITY.md).
 
 ## Тест
 
@@ -87,8 +88,9 @@ npm run dev                                # http://localhost:3000
 
 ## CI/CD
 
-Push бүрт (бүх branch) [GitHub Actions](.github/workflows/ci.yml) 4 job ажиллуулна: `backend`, `ai-service`, `training`
-(pytest, CPU-only PyTorch), `web` (lint, typecheck, build). CI дээр `.env` байхгүй тул DB-тэй тестүүд алгасагдана.
+Push бүрт (бүх branch) [GitHub Actions](.github/workflows/ci.yml) 5 job ажиллуулна: `secrets` (шинэ commit-д нууц
+утга байгаа эсэх, gitleaks), `backend`, `ai-service`, `training` (pytest, CPU-only PyTorch), `web` (lint, typecheck, build).
+CI дээр `.env` байхгүй тул DB-тэй тестүүд алгасагдана.
 
 Deploy-ийг платформуудын GitHub integration хийнэ, GitHub-д нууц token хадгалахгүй:
 
@@ -107,7 +109,7 @@ Deploy-ийг платформуудын GitHub integration хийнэ, GitHub-�
 - **Vercel** → project → Settings: Root Directory `web`, Production Branch `main`
   ([`web/vercel.json`](web/vercel.json): `web/` өөрчлөгдөөгүй commit-ийг build хийхгүй).
 - **GitHub** → Settings → Branches → `main` rule: **Require a pull request before merging**,
-  **Require status checks to pass**: `backend`, `ai-service`, `training`, `web`. Vercel CI хүлээдэггүй тул production-ийг
+  **Require status checks to pass**: `secrets`, `backend`, `ai-service`, `training`, `web`. Vercel CI хүлээдэггүй тул production-ийг
   энэ дүрэм хамгаална.
 
 ## Хамтран ажиллах дүрэм

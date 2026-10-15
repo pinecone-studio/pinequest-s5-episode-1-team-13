@@ -54,6 +54,10 @@ class Settings(BaseSettings):
     # Сургалтын хавтас (өгөгдөл, шошго, модель). ai-service-ийн DATASET_DIR-тэй нэг байрлалд байх ёстой.
     training_dir: str = "../training"
 
+    # DB/AI/камер/edge унтарвал энэ webhook руу alert (Discord, Slack, Telegram, {"text"}). Хоосон = унтраалттай. НУУЦ (token агуулна).
+    alert_webhook_url: str = ""
+    alert_check_seconds: int = Field(60, ge=15, le=3600)
+
     cors_origins: str = "http://localhost:3000"
     log_level: str = "INFO"
     log_dir: str = "./logs"
