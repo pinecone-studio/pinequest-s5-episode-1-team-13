@@ -96,6 +96,27 @@ python -m scripts.export_onnx path/to/model.pt --imgsz 640
 
 Models from the Training page are already `.onnx`.
 
+## Docker
+
+```bash
+cd ai-service
+docker build -t pinequest-ai .
+docker run --rm --env-file .env \
+  -e MODEL_PATH=/models/ppe.onnx \
+  -e BACKEND_URL=http://host.docker.internal:8000 \
+  -e MEDIAMTX_RTSP_URL=rtsp://host.docker.internal:8554 \
+  -v "$PWD/../training/models:/models:ro" \
+  -v "$PWD/../training:/training" \
+  pinequest-ai
+```
+
+- The image has no model inside. Mount the folder with your model at `/models` and set `MODEL_PATH`.
+- Mount `training/` at `/training` so the Training page sees collected pictures.
+- Inside Docker, `localhost` is the container itself: use `host.docker.internal` (Mac/Windows) or the service
+  names from docker compose (e.g. `http://backend:8000`, `rtsp://mediamtx:8554`).
+- Runs on the CPU (`DEVICE=cpu`). `LOCAL_WEBCAM` cameras don't work in Docker on a Mac — run the service
+  directly with Python for the laptop camera.
+
 ## Test
 
 ```bash
