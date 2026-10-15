@@ -40,6 +40,7 @@ rtspAddress: :8554
 
 ###############################################
 # WebRTC (:8889) — dashboard WHEP, browser камер WHIP
+# Browser-ийн ICE серверүүд (STUN + TURN credential) backend-ээс ирнэ (backend/.env WEBRTC_STUN_URLS, TURN_*).
 ###############################################
 
 webrtc: true
@@ -48,11 +49,18 @@ webrtcAddress: :8889
 webrtcAllowOrigins: ["*"]
 # Медиа (ICE) UDP порт. Firewall / Docker дээр 8189/udp-г нээнэ.
 webrtcLocalUDPAddress: :8189
+# ICE-TCP: UDP хаагдсан сүлжээнээс (корпорацийн firewall) TCP-ээр холбогдоно. Firewall / Docker дээр 8189/tcp-г нээнэ.
+webrtcLocalTCPAddress: :8189
 # LAN-ийн өөр компьютерээс үзэх бол энэ машины IP эсвэл домэйн:
 webrtcAdditionalHosts: []
-# NAT-ын ард (өөр сүлжээнээс) үзэх бол STUN:
-webrtcICEServers2: []
-#  - url: stun:stun.l.google.com:19302
+# STUN: MediaMTX NAT-ын ард байхад өөрийн public IP-г олж browser-т өгнө (өөр сүлжээнээс шууд холбогдоно).
+webrtcICEServers2:
+  - url: stun:stun.l.google.com:19302
+  # Хоёр тал хоёулаа symmetric NAT-ын ард байвал л серверт TURN нэмнэ (бүх урсгал TURN-ээр явна).
+  # coturn use-auth-secret: username нь яг "AUTH_SECRET", password нь static-auth-secret.
+  # - url: turn:turn.example.com:3478
+  #   username: AUTH_SECRET
+  #   password: CHANGE_ME
 
 ###############################################
 # Ашиглагддаггүй серверүүд — унтраалттай (илүү порт нээхгүй)
