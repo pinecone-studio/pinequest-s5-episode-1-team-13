@@ -16,7 +16,10 @@ browser камер ─WebRTC (WHIP)─► MediaMTX ─RTSP─► ai-service
 | Файл | Үүрэг |
 |---|---|
 | [`infra/mediamtx.yml`](mediamtx.yml) | MediaMTX тохиргоо: портууд, `cam_<camera_id>` path-ууд, backend руу HTTP нэвтрэлт |
-| `docker-compose.yml` (root, төлөвлөгдсөн) | backend, ai-service, web, MediaMTX-ийг нэг дор асаана |
+| [`infra/edge/factory.yml`](edge/factory.yml) | Үйлдвэрийн компьютер: ai-service + MediaMTX + cloudflared tunnel + edge-announcer |
+| [`infra/edge/vps.yml`](edge/vps.yml) | VPS: MediaMTX (RTSPS) + Caddy (HTTPS) + edge-announcer |
+| [`infra/edge/ai.yml`](edge/ai.yml) | VPS горимд үйлдвэрийн компьютер: зөвхөн ai-service |
+| [`infra/edge/announce.py`](edge/announce.py) | MediaMTX-ийн HTTPS хаягийг backend-д минут тутам мэдэгдэнэ (`PUT /internal/edge`) |
 
 ## MediaMTX асаах
 
@@ -60,6 +63,70 @@ MediaMTX нь publish/read хүсэлт бүрт backend-ийн `POST /internal/
 - **browser камер**: publish токен, зөвхөн тухайн path-д (publish)
 
 Path нэр нь `cam_<camera_id>` байх ба backend, ai-service хоёрт **ижил** байх ёстой.
+
+## Edge-ийг нэг командаар асаах (Docker Compose)
+
+Edge = камертай нэг сүлжээнд ажиллах ai-service + MediaMTX. Backend (Railway) ба web (Vercel) cloud-д байна.
+Edge нь MediaMTX-ийн HTTPS хаягаа backend-д минут тутам мэдэгдэнэ (`PUT /internal/edge`). Backend 3 минут мэдэгдэл
+аваагүй бол `MEDIAMTX_PUBLIC_URL` руу буцна. Railway-ийн хувьсагчийг гараар солих шаардлагагүй.
+
+| Горим | Хаана | Команд (repo-ийн root-оос) |
+|---|---|---|
+| Бүгд нэг дор | Үйлдвэрийн компьютер | `docker compose -f infra/edge/factory.yml up -d --build` |
+| VPS | Public IP-тэй сервер | `docker compose -f infra/edge/vps.yml up -d` |
+| VPS горимд AI | Үйлдвэрийн компьютер | `docker compose -f infra/edge/ai.yml up -d --build` |
+
+```
+Бүгд нэг дор:  IP камер ─► ai-service ─RTSP─► MediaMTX ◄─ cloudflared (https://<random>.trycloudflare.com) ◄─ browser
+VPS горим:     IP камер ─► ai-service (үйлдвэр) ─RTSPS :8322─► MediaMTX (VPS) ◄─ Caddy (https://<MEDIA_DOMAIN>) ◄─ browser
+```
+
+### Бэлтгэл (хоёр горимд)
+
+1. Docker суулгана. Үйлдвэрийн компьютер (Windows/Mac): [Docker Desktop](https://www.docker.com/products/docker-desktop/),
+   Settings → General → **Start Docker Desktop when you sign in** (компьютер асахад edge өөрөө асна —
+   container бүр `restart: unless-stopped`). Linux/VPS: `curl -fsSL https://get.docker.com | sh`.
+2. Repo-г clone хийнэ. `cp infra/edge/.env.example infra/edge/.env` хийгээд бөглөнө (тайлбар файл дотор).
+3. AI ажиллах машин дээр (factory/ai): `ai-service/.env` (DB, Supabase, CAMERA_SECRET_KEY) бөглөсөн, модель
+   `training/models/<MODEL_FILE>`-д байна. `BACKEND_URL`, `INTERNAL_API_KEY`-г `infra/edge/.env`-ээс авна.
+4. Backend (Railway): `CAMERA_PROBE_ENABLED=false` (edge-ийн хаягийг дагана).
+
+### Бүгд нэг дор (үйлдвэрийн компьютер)
+
+- `infra/edge/.env`: `BACKEND_URL`, `INTERNAL_API_KEY`, `EDGE_HOSTS=<энэ компьютерийн LAN IP>`, `MODEL_FILE`.
+- Cloudflare quick tunnel: аккаунтгүй, асах бүрт хаяг солигдоно — edge-announcer шинэ хаягийг автоматаар мэдэгдэнэ.
+- Firewall (Windows Defender): `8189/udp`, `8189/tcp`-г LAN-д нээнэ. Өөр сүлжээнээс үзэх бол router дээр 8189 udp/tcp-г
+  port-forward хийж, `EDGE_HOSTS`-д public IP-г нэмнэ (эсвэл TURN — доорх хэсэг).
+
+### VPS горим
+
+VPS дээр (`vps.yml`):
+
+- DNS: `MEDIA_DOMAIN` (жишээ `media.example.com`)-ий A record → VPS IP. `infra/edge/.env`: `BACKEND_URL`, `INTERNAL_API_KEY`,
+  `EDGE_HOSTS=<VPS public IP>`, `MEDIA_DOMAIN`.
+- Firewall: `80/tcp`, `443/tcp+udp` (Caddy, Let's Encrypt), `8189/udp+tcp` (WebRTC медиа), `8322/tcp` (RTSPS —
+  боломжтой бол зөвхөн үйлдвэрийн public IP-д). `8554` (ил RTSP)-ийг гадагш нээхгүй.
+- RTSPS-ийн self-signed сертификатыг анх асахад `rtsps-cert` үүсгэнэ (`rtsps-certs` volume, 10 жил).
+
+Үйлдвэрийн компьютер дээр (`ai.yml`): `infra/edge/.env`-д `BACKEND_URL`, `INTERNAL_API_KEY`, `MODEL_FILE`,
+`MEDIAMTX_RTSP_URL=rtsps://<MEDIA_DOMAIN>:8322`. Камерууд руу зөвхөн гарах холболт хэрэгтэй, port-forward шаардлагагүй.
+
+### Шалгах, засвар
+
+```bash
+docker compose -f infra/edge/factory.yml ps                     # бүгд running (vps.yml-д rtsps-cert нь exited (0))
+docker compose -f infra/edge/factory.yml logs -f edge-announcer # "мэдэгдлээ: https://..." 
+docker compose -f infra/edge/factory.yml logs -f mediamtx ai-service
+docker compose -f infra/edge/factory.yml pull && docker compose -f infra/edge/factory.yml up -d --build  # шинэчлэх
+docker compose -f infra/edge/factory.yml down                   # зогсоох
+```
+
+- edge-announcer `HTTP 401` = `INTERNAL_API_KEY` backend-тэй таарахгүй. MediaMTX log-д `authentication failed` = `BACKEND_URL` буруу.
+- Dashboard дээр видео гарахгүй бол `chrome://webrtc-internals` (доорх "Шалгах").
+- `LOCAL_WEBCAM` (USB камер) Docker Desktop (Windows/Mac) дээр ажиллахгүй — ai-service-ийг Python-оор шууд асаана.
+  Linux дээр нэмэлт файл (жишээ `webcam.yml`: `services: {ai-service: {devices: ["/dev/video0:/dev/video0"]}}`) бичээд
+  `docker compose -f infra/edge/factory.yml -f webcam.yml up -d` гэж асаана.
+- NVIDIA GPU: Dockerfile нь CPU-only PyTorch суулгадаг тул GPU-д ai-service-ийг Python-оор шууд асаах нь энгийн.
 
 ## WebRTC NAT traversal (STUN, ICE-TCP, TURN)
 
