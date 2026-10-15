@@ -1,5 +1,7 @@
 # pinequest-s5-episode-1-team-13
 
+[![CI](https://github.com/pinecone-studio/pinequest-s5-episode-1-team-13/actions/workflows/ci.yml/badge.svg)](https://github.com/pinecone-studio/pinequest-s5-episode-1-team-13/actions/workflows/ci.yml)
+
 Үйлдвэрийн IP камераас ажилчдын **дуулга** болон **ажлын хувцсыг** AI-аар бодит цагт шалгаж, зөрчил илэрвэл
 snapshot авч dashboard дээр шууд мэдэгддэг систем.
 
@@ -82,6 +84,31 @@ npm run dev                                # http://localhost:3000
 (cd training && python -m pytest tests)
 (cd web && npm run lint && npm run typecheck)
 ```
+
+## CI/CD
+
+Push бүрт (бүх branch) [GitHub Actions](.github/workflows/ci.yml) 4 job ажиллуулна: `backend`, `ai-service`, `training`
+(pytest, CPU-only PyTorch), `web` (lint, typecheck, build). CI дээр `.env` байхгүй тул DB-тэй тестүүд алгасагдана.
+
+Deploy-ийг платформуудын GitHub integration хийнэ, GitHub-д нууц token хадгалахгүй:
+
+| Сервис | Хаана | Хэзээ |
+|---|---|---|
+| backend | Railway | `main` руу merge хийгдэж, CI давсны дараа (`backend/` өөрчлөгдсөн үед л) |
+| web | Vercel | `main` → production, бусад branch → preview (`web/` өөрчлөгдсөн үед л) |
+
+Нэг удаагийн тохиргоо (dashboard дээр):
+
+- **GitHub** → Settings → Actions → General: **Allow all actions and reusable workflows** (байгууллагын түвшинд
+  унтраалттай бол org owner асаана). Push хийсний дараа Actions tab-д CI run гарч ирэхгүй бол энэ тохиргоог шалгана.
+- **Railway** → backend service → Settings: Root Directory `backend`, Config-as-code path `/backend/railway.json`
+  ([`backend/railway.json`](backend/railway.json): Dockerfile, `/health` healthcheck, зөвхөн `/backend/**` өөрчлөгдөхөд deploy),
+  Deploy → **Wait for CI** асаана (CI унавал deploy хийхгүй).
+- **Vercel** → project → Settings: Root Directory `web`, Production Branch `main`
+  ([`web/vercel.json`](web/vercel.json): `web/` өөрчлөгдөөгүй commit-ийг build хийхгүй).
+- **GitHub** → Settings → Branches → `main` rule: **Require a pull request before merging**,
+  **Require status checks to pass**: `backend`, `ai-service`, `training`, `web`. Vercel CI хүлээдэггүй тул production-ийг
+  энэ дүрэм хамгаална.
 
 ## Хамтран ажиллах дүрэм
 
