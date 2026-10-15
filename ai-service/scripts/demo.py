@@ -5,8 +5,10 @@ Your backup for the pitch: no camera, backend or database needed — only the mo
     python -m scripts.demo factory.jpg                  # -> factory_demo.jpg
     python -m scripts.demo walk.mp4                     # -> walk_demo.mp4 + a summary
     python -m scripts.demo walk.mp4 --office --max-seconds 20
+    python -m scripts.demo walk.mp4 --area "0.6,0.5 0.95,0.5 0.95,0.95 0.6,0.95"   # restricted area
 
-Colours: green = OK, red = violation, grey = can't tell (UNKNOWN).
+Colours: green = OK, red = violation, grey = can't tell (UNKNOWN). A restricted area is drawn in red;
+anyone whose feet are inside it is a violation. Points are parts of the width/height (0..1), at least 3.
 For videos it also counts violations with the same rules as the live system (2 s to confirm, 60 s cooldown).
 """
 
@@ -22,6 +24,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from app.detection.areas import Polygon, mark, parse_points, to_pixels
 from app.detection.ppe import analyse
 from app.detection.types import PersonResult
 from app.violations.rules import ViolationRules
@@ -43,12 +46,25 @@ def label(person: PersonResult) -> str:
     if person.helmet_required or person.helmet != "UNKNOWN":
         parts.append(f"helmet:{person.helmet}")
     parts.append(f"uniform:{person.uniform}")
+    if person.restricted:
+        parts.append("RESTRICTED")
     return " ".join(parts)
 
 
-def draw(frame: np.ndarray, people: list[PersonResult]) -> np.ndarray:
+def draw_areas(out: np.ndarray, areas: list[Polygon], thick: int) -> None:
+    h, w = out.shape[:2]
+    for area in areas:
+        pts = np.array(to_pixels(area, w, h), dtype=np.int32)
+        shade = out.copy()
+        cv2.fillPoly(shade, [pts], RED)
+        cv2.addWeighted(shade, 0.18, out, 0.82, 0, dst=out)
+        cv2.polylines(out, [pts], True, RED, thick, cv2.LINE_AA)
+
+
+def draw(frame: np.ndarray, people: list[PersonResult], areas: list[Polygon] = ()) -> np.ndarray:
     out = frame.copy()
     thick = max(2, out.shape[1] // 500)
+    draw_areas(out, list(areas), thick)
     scale = max(0.45, out.shape[1] / 1800)
     for p in people:
         c = colour(p)
@@ -65,12 +81,15 @@ def draw(frame: np.ndarray, people: list[PersonResult]) -> np.ndarray:
     return out
 
 
-def demo_image(path: Path, out: Path, detect, helmet_required: bool, no_conf: float = 0.0) -> list[PersonResult]:
+def demo_image(
+    path: Path, out: Path, detect, helmet_required: bool, no_conf: float = 0.0, areas: list[Polygon] = ()
+) -> list[PersonResult]:
     frame = cv2.imread(str(path))
     if frame is None:
         raise ValueError(f"Cannot read image: {path}")
     people = analyse(detect(frame), helmet_required=helmet_required, no_conf=no_conf)
-    cv2.imwrite(str(out), draw(frame, people))
+    mark(people, areas, frame.shape[1], frame.shape[0])
+    cv2.imwrite(str(out), draw(frame, people, areas))
     return people
 
 
@@ -102,7 +121,15 @@ class VideoOut:
             self._writer.release()
 
 
-def demo_video(path: Path, out: Path, detect, helmet_required: bool, max_seconds: float | None = None, no_conf: float = 0.0) -> dict:
+def demo_video(
+    path: Path,
+    out: Path,
+    detect,
+    helmet_required: bool,
+    max_seconds: float | None = None,
+    no_conf: float = 0.0,
+    areas: list[Polygon] = (),
+) -> dict:
     cap = cv2.VideoCapture(str(path))
     if not cap.isOpened():
         raise ValueError(f"Cannot open video: {path}")
@@ -117,12 +144,13 @@ def demo_video(path: Path, out: Path, detect, helmet_required: bool, max_seconds
             if not ok or (max_seconds is not None and frames / fps >= max_seconds):
                 break
             people = analyse(detect(frame), helmet_required=helmet_required, no_conf=no_conf)
+            mark(people, areas, frame.shape[1], frame.shape[0])
             ids.update(p.id for p in people if p.id is not None)
             for vtype, _ in rules.update(people, frames / fps):
                 saved[vtype] += 1
             if writer is None:
                 writer = VideoOut(out, fps, (frame.shape[1], frame.shape[0]))
-            writer.write(draw(frame, people))
+            writer.write(draw(frame, people, areas))
             frames += 1
     finally:
         cap.release()
@@ -140,7 +168,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--conf", type=float, default=0.35)
     parser.add_argument("--office", action="store_true", help="OFFICE zone: helmet not required")
     parser.add_argument("--max-seconds", type=float, help="only the first N seconds of a video")
+    parser.add_argument("--area", action="append", default=[], metavar="POINTS",
+                        help='restricted area, e.g. "0.6,0.5 0.95,0.5 0.95,0.95 0.6,0.95" (can repeat)')  # fmt: skip
     args = parser.parse_args(argv)
+    try:
+        areas = [parse_points(text) for text in args.area]
+    except ValueError as exc:
+        print(f"--area: {exc}", file=sys.stderr)
+        return 1
 
     if not args.file.is_file():
         print(f"File not found: {args.file}", file=sys.stderr)
@@ -160,13 +195,13 @@ def main(argv: list[str] | None = None) -> int:
     helmet_required = not args.office
 
     if is_image:
-        people = demo_image(args.file, out, detect, helmet_required, settings.no_conf_threshold)
+        people = demo_image(args.file, out, detect, helmet_required, settings.no_conf_threshold, areas)
         bad = sum(p.violation for p in people)
         print(f"Saved: {out}\nPeople: {len(people)} | violations: {bad}")
         for p in people:
             print(f"  {label(p)}" + ("  <- VIOLATION" if p.violation else ""))
     else:
-        summary = demo_video(args.file, out, detect, helmet_required, args.max_seconds, settings.no_conf_threshold)
+        summary = demo_video(args.file, out, detect, helmet_required, args.max_seconds, settings.no_conf_threshold, areas)
         print(f"Saved: {out}")
         print(f"{summary['seconds']} s, {summary['frames']} frames | different people: {summary['people']}")
         print(f"Violations the live system would save: {summary['violations'] or 'none'}")
