@@ -1,0 +1,33 @@
+# gitleaks: commit-д нууц утга орохоос сэргийлнэ (CI "secrets" job, .pre-commit-config.yaml). SECURITY.md
+#   gitleaks git --log-opts="origin/main..HEAD" --redact .     # өөрийн branch-ийн шинэ commit-уудыг шалгах
+
+title = "pinequest gitleaks config"
+
+[extend]
+useDefault = true
+
+# Үндсэн дүрмүүд нууц үгтэй DATABASE_URL-ийг илрүүлдэггүй
+[[rules]]
+id = "postgres-url-password"
+description = "PostgreSQL connection URL with an embedded password"
+regex = '''postgres(?:ql)?(?:\+psycopg2?)?://[^:/@\s'"]+:([^@\s'"]{6,})@[^\s'"/]+'''
+secretGroup = 1
+keywords = ["postgres"]
+
+[[rules.allowlists]]
+description = ".env.example placeholder"
+regexTarget = "match"
+regexes = ['''USER:PASSWORD@HOST''']
+
+# Alert webhook (ALERT_WEBHOOK_URL): URL дотор token байдаг
+[[rules]]
+id = "discord-webhook-url"
+description = "Discord webhook URL"
+regex = '''https://(?:ptb\.|canary\.)?discord(?:app)?\.com/api/webhooks/\d{6,}/([\w-]{40,})'''
+secretGroup = 1
+keywords = ["discord"]
+
+[[allowlists]]
+description = ".env.example placeholders"
+regexTarget = "line"
+regexes = ['''=\s*(CHANGE_ME|YOUR_[A-Z_]+)\s*$''']

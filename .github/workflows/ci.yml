@@ -1,6 +1,6 @@
 # Push бүрт бүх сервисийн тест. Deploy-ийг Railway (backend), Vercel (web)-ийн GitHub integration хийнэ:
 # Railway "Wait for CI" энэ workflow давсны дараа deploy хийнэ, main-д зөвхөн бүх check давсан PR merge хийгдэнэ (README "CI/CD").
-# Job-уудын нэр (backend, ai-service, training, web) = branch protection-ий required check-ийн нэр.
+# Job-уудын нэр (secrets, backend, ai-service, training, web) = branch protection-ий required check-ийн нэр.
 name: CI
 
 on:
@@ -16,6 +16,36 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  # Шинэ commit-уудад нууц утга (.gitleaks.toml). Хуучин түүхийг шалгахгүй: тэнд задарсан түлхүүрүүдийг сольсон (SECURITY.md).
+  secrets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+      - name: Scan new commits
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # Шинэ branch (before = 0000...) эсвэл force push: main-д байхгүй commit-ууд
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            range="${BEFORE}..${GITHUB_SHA}"
+          else
+            range="origin/main..${GITHUB_SHA}"
+          fi
+          echo "Scanning ${range}"
+          "$RUNNER_TEMP/gitleaks" git --no-banner --redact --verbose --config .gitleaks.toml --log-opts="${range}" --exit-code 1 .
+
   backend:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
