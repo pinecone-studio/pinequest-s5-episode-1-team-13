@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Power, RotateCw, Video, VideoOff } from "lucide-react";
+import { Power, RotateCw, ShieldBan, Video, VideoOff } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/providers/auth-provider";
 
 import { DetectionOverlay } from "@/components/dashboard/detection-overlay";
+import { RestrictedAreaLayer } from "@/components/dashboard/restricted-area-layer";
 import { CameraStatusBadge } from "@/components/status-badges";
 import { api, ApiError } from "@/lib/api";
 import { CAMERA_STATUS_LABEL, cameraTone, zoneLabel } from "@/lib/format";
@@ -41,6 +42,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const { canManageCameras } = useAuth();
+  const [editingArea, setEditingArea] = useState(false);
 
   async function rotate() {
     try {
@@ -184,6 +186,10 @@ export function CameraTile({ camera }: { camera: Camera }) {
             className="absolute bg-black object-contain"
           />
         </div>
+        {playing && (
+          <RestrictedAreaLayer cameraId={camera.id} video={video} mirror={mirror} rotation={rotation}
+            editing={editingArea && canManageCameras} onDone={() => setEditingArea(false)} />
+        )}
         {playing && camera.ai_enabled && <DetectionOverlay cameraId={camera.id} video={video} mirror={mirror} rotation={rotation} />}
         {playing && !camera.ai_enabled && (
           <span className="pointer-events-none absolute right-4 top-4 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
@@ -228,6 +234,15 @@ export function CameraTile({ camera }: { camera: Camera }) {
           >
             <Video className="size-4" />
             {publishing === "off" ? "Энэ төхөөрөмжөөс дамжуулах" : publishing === "starting" ? "Холбогдож байна… (зогсоох)" : "Дамжуулалт зогсоох"}
+          </button>
+        )}
+
+        {canManageCameras && playing && !editingArea && (
+          <button
+            type="button" onClick={() => setEditingArea(true)} title="Хориотой бүс зурах" aria-label="Хориотой бүс зурах"
+            className="absolute bottom-16 right-16 grid size-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur transition hover:bg-red-600"
+          >
+            <ShieldBan className="size-5" />
           </button>
         )}
 

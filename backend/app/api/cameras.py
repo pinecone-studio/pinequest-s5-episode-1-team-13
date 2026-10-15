@@ -13,7 +13,7 @@ from app.config import get_settings
 from app.core.security import create_stream_token, encrypt_secret
 from app.database.database import get_db
 from app.database.models import AppSetting, Camera, CameraStatus, CameraType, User, Violation, Zone
-from app.schemas.camera import CameraCreate, CameraOut, CameraTestRequest, CameraUpdate, ConnectionTestResult
+from app.schemas.camera import CameraCreate, CameraOut, CameraTestRequest, CameraUpdate, ConnectionTestResult, RestrictedAreas
 from app.services import camera_service
 from app.websocket.manager import manager
 
@@ -27,6 +27,7 @@ def _get_or_404(db: Session, camera_id: uuid.UUID) -> Camera:
     return camera
 
 
+RESTRICTED_AREAS_KEY = "restricted_areas"  # app_settings: {camera_id: [[[x, y], ...], ...]} — ai-service уншина
 DEMO_CAMERAS_KEY = "demo_cameras"  # app_settings: demo хэрэглэгчийн нэмсэн камерын id-ууд
 
 
@@ -171,6 +172,7 @@ async def delete_camera(
                 "Disconnect хийж орхино уу, эсвэл ?force=true-ээр violation-уудын хамт устгана уу.",
             )
         db.delete(camera)
+        _save_areas(db, camera_id, [])
         db.commit()
 
     await run_in_threadpool(work)
@@ -246,3 +248,45 @@ def publish_access(camera_id: uuid.UUID, db: Session = Depends(get_db), user: Us
         "expires_in": settings.stream_token_expire_seconds,
         "ice_servers": camera_service.ice_servers(),
     }
+
+
+def _all_areas(db: Session) -> dict:
+    row = db.get(AppSetting, RESTRICTED_AREAS_KEY)
+    return dict(row.value) if row and isinstance(row.value, dict) else {}
+
+
+def _save_areas(db: Session, camera_id: uuid.UUID, areas: list) -> None:
+    value = _all_areas(db)
+    if areas:
+        value[str(camera_id)] = areas
+    elif str(camera_id) not in value:
+        return
+    else:
+        value.pop(str(camera_id))
+    db.merge(AppSetting(key=RESTRICTED_AREAS_KEY, value=value))
+
+
+@router.get("/{camera_id}/restricted-area", response_model=RestrictedAreas)
+def get_restricted_area(camera_id: uuid.UUID, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    """Камерын хориотой бүс(үүд). Хоосон жагсаалт = бүс байхгүй."""
+    _get_or_404(db, camera_id)
+    try:
+        return RestrictedAreas(areas=_all_areas(db).get(str(camera_id), []))
+    except ValueError:  # DB-д гараар буруу утга бичсэн бол dashboard-ыг эвдэхгүй
+        return RestrictedAreas()
+
+
+@router.put("/{camera_id}/restricted-area", response_model=RestrictedAreas)
+async def put_restricted_area(
+    camera_id: uuid.UUID, body: RestrictedAreas, db: Session = Depends(get_db), user: User = Depends(require_camera_manager)
+):
+    """Хориотой бүсийг солино ({"areas": []} = устгана). AI ~10 сек дотор шинэ бүсийг ашиглана."""
+
+    def work() -> None:
+        _get_managed(db, camera_id, user)
+        _save_areas(db, camera_id, [[list(p) for p in poly] for poly in body.areas])
+        db.commit()
+
+    await run_in_threadpool(work)
+    await manager.broadcast("RESTRICTED_AREA_UPDATED", {"camera_id": str(camera_id), "areas": body.model_dump(mode="json")["areas"]})
+    return body

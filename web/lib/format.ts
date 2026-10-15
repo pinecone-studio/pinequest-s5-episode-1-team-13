@@ -3,7 +3,7 @@ import type { CameraStatus, CameraType, Role, ViolationStatus, ViolationType, Zo
 export const VIOLATION_LABEL: Record<ViolationType, string> = {
   NO_HELMET: "Каскгүй",
   NO_WORK_UNIFORM: "Ажлын хувцасгүй",
-  OTHER_SAFETY_VIOLATION: "Бусад аюулгүй байдлын зөрчил",
+  OTHER_SAFETY_VIOLATION: "Хориотой бүсэд орсон", // AI зөвхөн хориотой бүсийн зөрчлийг энэ төрлөөр хадгална
 };
 
 export const STATUS_LABEL: Record<ViolationStatus, string> = {

@@ -97,7 +97,7 @@ export function DetectionOverlay({ cameraId, video, mirror, rotation = 0 }: { ca
           }
         }
 
-        const detail = ppeLabel(p.helmet, p.uniform, helmetRequired);
+        const detail = [p.restricted ? "Хориотой бүс" : "", ppeLabel(p.helmet, p.uniform, helmetRequired)].filter(Boolean).join(" · ");
         const text = `#${p.id ?? "?"}${detail ? " " + detail : " Хүн"}`;
         const padX = font * 0.5, chipH = font * 1.5;
         const chipW = ctx.measureText(text).width + padX * 2;

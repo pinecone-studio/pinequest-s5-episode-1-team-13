@@ -138,3 +138,23 @@ class ConnectionTestResult(BaseModel):
     message: str
     reason: str | None = None  # алдааны тодорхой шалтгаан (нууц үг агуулахгүй)
     resolution: str | None = None
+
+
+# Хориотой бүс: AI-ийн харж буй зураг дээрх (эргүүлсний дараа, толин тусгалаас өмнө) 0..1 координаттай олон өнцөгт.
+# Хүний хөл (боксын доод төв) дотор нь орвол зөрчил. ai-service/app/detection/areas.py-тэй ижил формат.
+MAX_AREAS, MAX_AREA_POINTS = 5, 30
+
+
+class RestrictedAreas(BaseModel):
+    areas: list[list[tuple[float, float]]] = Field(default_factory=list, max_length=MAX_AREAS)
+
+    @field_validator("areas")
+    @classmethod
+    def _check(cls, areas: list[list[tuple[float, float]]]) -> list[list[tuple[float, float]]]:
+        for poly in areas:
+            if not 3 <= len(poly) <= MAX_AREA_POINTS:
+                raise ValueError(f"each area needs 3..{MAX_AREA_POINTS} points")
+            for x, y in poly:
+                if not (0 <= x <= 1 and 0 <= y <= 1):
+                    raise ValueError("points must be between 0 and 1")
+        return [[(round(x, 4), round(y, 4)) for x, y in poly] for poly in areas]
