@@ -13,6 +13,7 @@ from app.dataset.collector import DatasetCollector
 from app.cameras.models import CameraInfo
 from app.detection.motion import MotionGate
 from app.detection.ppe import analyse
+from app.detection.smoothing import PersonSmoother
 from app.detection.types import Detection, PersonResult
 from app.violations.reporter import ViolationReporter
 from app.violations.rules import ViolationRules
@@ -33,8 +34,10 @@ class CameraAI:
         min_brightness: float = 0,
         min_sharpness: float = 0,
         no_conf: float = 0.0,
+        smooth_window: int = 1,
     ) -> None:
         self._no_conf = no_conf
+        self._smoother = PersonSmoother(smooth_window) if smooth_window > 1 else None
         self._motion = motion
         self._min_brightness, self._min_sharpness = min_brightness, min_sharpness
         self._last_problem: str | None = None
@@ -65,6 +68,8 @@ class CameraAI:
         height, width = frame.shape[:2]
         detections = self._detector(frame)
         people = analyse(detections, helmet_required=camera.zone_type != "OFFICE", no_conf=self._no_conf)
+        if self._smoother is not None:
+            people = self._smoother.apply(people)  # majority of the last few results per person: no flicker
         if people or not self._sent_empty:
             self._client.detections(camera.id, [p.to_payload(width, height) for p in people])
         self._sent_empty = not people
