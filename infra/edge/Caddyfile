@@ -1,0 +1,5 @@
+# VPS: https://<MEDIA_DOMAIN> -> MediaMTX WebRTC (WHEP/WHIP). Let's Encrypt сертификатыг Caddy өөрөө авч сунгана
+# (DNS A record нь VPS-ийн IP руу заасан, 80/443 нээлттэй байх ёстой).
+{$MEDIA_DOMAIN} {
+	reverse_proxy mediamtx:8889
+}

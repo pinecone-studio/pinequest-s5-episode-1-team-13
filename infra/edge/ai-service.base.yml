@@ -1,0 +1,22 @@
+# ai-service-ийн нийтлэг тодорхойлолт. Шууд асаахгүй: ai.yml, factory.yml extends-ээр ашиглана.
+# MEDIAMTX_RTSP_URL-ийг энд бичихгүй — горим бүр өөрөө өгнө (extends эх файлыг бүтнээр нь interpolate хийдэг).
+
+services:
+  ai-service:
+    build: ../../ai-service
+    image: pinequest-ai-service
+    restart: unless-stopped
+    env_file: ../../ai-service/.env
+    environment:
+      # Docker дотор localhost = container өөрөө тул эдгээрийг infra/edge/.env-ээс авна (ai-service/.env-ийнхийг дарна)
+      BACKEND_URL: ${BACKEND_URL:?infra/edge/.env-д BACKEND_URL бөглөнө үү}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?infra/edge/.env-д INTERNAL_API_KEY бөглөнө үү}
+      MODEL_PATH: /training/models/${MODEL_FILE:-ppe.pt}
+      DATASET_DIR: /training
+    volumes:
+      - ../../training:/training
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
