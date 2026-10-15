@@ -82,12 +82,18 @@ export function CameraTile({ camera }: { camera: Camera }) {
     try {
       const access = await api.publish(camera.id);
       if (!p.wanted) return;
-      const pc = await startWhip(access.whip_url, access.token, p.stream, () => {
-        if (p.pc !== pc) return; // хуучин (солигдсон) session-ий event — одоогийнхыг хаахгүй
-        pc.close();
-        p.pc = null;
-        retry();
-      });
+      const pc = await startWhip(
+        access.whip_url,
+        access.token,
+        p.stream,
+        () => {
+          if (p.pc !== pc) return; // хуучин (солигдсон) session-ий event — одоогийнхыг хаахгүй
+          pc.close();
+          p.pc = null;
+          retry();
+        },
+        access.ice_servers,
+      );
       if (!p.wanted) return pc.close();
       p.pc = pc;
       setPublishing("on");
@@ -149,7 +155,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
       try {
         const access = await api.webrtc(camera.id);
         if (cancelled) return;
-        pc = await startWhep(access.whep_url, access.token, (stream) => { video.srcObject = stream; }, retry);
+        pc = await startWhep(access.whep_url, access.token, (stream) => { video.srcObject = stream; }, retry, access.ice_servers);
         if (cancelled) pc.close();
       } catch (err) {
         if (err instanceof ApiError && err.status === 404) return; // камер устгагдсан — дахин асуухгүй

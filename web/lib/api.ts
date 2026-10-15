@@ -82,9 +82,11 @@ export const api = {
   connectCamera: (id: string) => request<Camera>(`/api/cameras/${id}/connect`, { method: "POST" }),
   disconnectCamera: (id: string) => request<Camera>(`/api/cameras/${id}/disconnect`, { method: "POST" }),
   /** Шууд видеоны WebRTC (WHEP) хаяг + богино хугацаатай токен */
-  webrtc: (id: string) => request<{ whep_url: string; token: string; expires_in: number }>(`/api/cameras/${id}/webrtc`),
+  webrtc: (id: string) =>
+    request<{ whep_url: string; token: string; expires_in: number; ice_servers?: RTCIceServer[] }>(`/api/cameras/${id}/webrtc`),
   /** BROWSER камер: энэ browser-ийн камерыг дамжуулах WHIP хаяг + publish токен */
-  publish: (id: string) => request<{ whip_url: string; token: string; expires_in: number }>(`/api/cameras/${id}/publish`),
+  publish: (id: string) =>
+    request<{ whip_url: string; token: string; expires_in: number; ice_servers?: RTCIceServer[] }>(`/api/cameras/${id}/publish`),
 
   violations: (params: { status?: ViolationStatus; zone?: ZoneName; violation_type?: ViolationType; page?: number; page_size?: number }) => {
     const query = new URLSearchParams();
