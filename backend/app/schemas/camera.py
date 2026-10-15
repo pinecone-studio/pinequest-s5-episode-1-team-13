@@ -4,6 +4,7 @@ import ipaddress
 import re
 import uuid
 from datetime import datetime
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
@@ -21,6 +22,31 @@ def _validate_host(value: str) -> str:
         pass
     if not _HOST_RE.match(value):
         raise ValueError("ip_address must be a valid IP address or hostname")
+    return value
+
+
+RTSP_URL_PREFIXES = ("rtsp://", "rtsps://")
+
+
+def _validate_address(value: str) -> str:
+    """IP/hostname, эсвэл GENERIC_RTSP-д бүтэн RTSP хаяг (утасны апп гэх мэт өөр path-тай камер):
+    rtsp://192.168.1.50:8080/h264.sdp. Нэвтрэх нэр/нууц үгийг URL-д бичихгүй — Username/Password талбарт
+    (нууц үг шифрлэгдэж хадгалагдана, ip_address харин API-д нээлттэй буцдаг)."""
+    value = value.strip()
+    if not value.lower().startswith(RTSP_URL_PREFIXES):
+        return _validate_host(value)
+    if len(value) > 300 or any(c.isspace() for c in value):
+        raise ValueError("RTSP хаяг буруу байна")
+    parts = urlsplit(value)
+    if parts.username is not None or parts.password is not None:
+        raise ValueError("RTSP хаягт нэр/нууц үг бичихгүй — Username, Password талбарт оруулна уу")
+    if not parts.hostname:
+        raise ValueError("RTSP хаягт host алга")
+    _validate_host(parts.hostname)
+    try:
+        parts.port  # noqa: B018 — буруу порт бол ValueError
+    except ValueError:
+        raise ValueError("RTSP хаягийн порт буруу байна") from None
     return value
 
 
@@ -49,7 +75,7 @@ class CameraBase(BaseModel):
     @field_validator("ip_address")
     @classmethod
     def _host(cls, v: str) -> str:
-        return _validate_host(v)
+        return _validate_address(v)
 
     @field_validator("name", "username")
     @classmethod
@@ -68,6 +94,8 @@ class CameraBase(BaseModel):
             self.ip_address, self.username = "browser", "-"
         elif not self.username:
             raise ValueError("username шаардлагатай")
+        if self.ip_address.lower().startswith(RTSP_URL_PREFIXES) and self.camera_type is not CameraType.GENERIC_RTSP:
+            raise ValueError("Бүтэн RTSP хаягийг зөвхөн GENERIC_RTSP төрөлд оруулна")
         return self
 
 
@@ -98,7 +126,7 @@ class CameraUpdate(BaseModel):
     @field_validator("ip_address")
     @classmethod
     def _host(cls, v: str | None) -> str | None:
-        return _validate_host(v) if v is not None else v
+        return _validate_address(v) if v is not None else v
 
     _rotation = field_validator("rotation")(_validate_rotation)
 
