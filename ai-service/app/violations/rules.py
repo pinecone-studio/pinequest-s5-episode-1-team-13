@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from app.detection.types import PersonResult
 
 NO_HELMET, NO_WORK_UNIFORM = "NO_HELMET", "NO_WORK_UNIFORM"  # = violation_type enum in the DB
+# The DB has no own type for this yet; OTHER_SAFETY_VIOLATION already exists in the DB, backend and web
+RESTRICTED_AREA = "OTHER_SAFETY_VIOLATION"
 MAX_GAP = 1.5  # seconds a "NO" may disappear (blur, someone walks in front) without restarting the timer
 
 
@@ -28,6 +30,8 @@ def violation_types(person: PersonResult) -> list[str]:
         types.append(NO_HELMET)
     if person.uniform == "NO":
         types.append(NO_WORK_UNIFORM)
+    if person.restricted:
+        types.append(RESTRICTED_AREA)
     return types
 
 

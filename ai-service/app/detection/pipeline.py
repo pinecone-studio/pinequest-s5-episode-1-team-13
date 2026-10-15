@@ -11,6 +11,7 @@ from app.backend_client import BackendClient
 from app.cameras.quality import measure
 from app.dataset.collector import DatasetCollector
 from app.cameras.models import CameraInfo
+from app.detection.areas import RestrictedAreaConfig, mark
 from app.detection.motion import MotionGate
 from app.detection.ppe import analyse
 from app.detection.smoothing import PersonSmoother
@@ -35,7 +36,9 @@ class CameraAI:
         min_sharpness: float = 0,
         no_conf: float = 0.0,
         smooth_window: int = 1,
+        areas: RestrictedAreaConfig | None = None,
     ) -> None:
+        self._areas = areas
         self._no_conf = no_conf
         self._smoother = PersonSmoother(smooth_window) if smooth_window > 1 else None
         self._motion = motion
@@ -70,6 +73,8 @@ class CameraAI:
         people = analyse(detections, helmet_required=camera.zone_type != "OFFICE", no_conf=self._no_conf)
         if self._smoother is not None:
             people = self._smoother.apply(people)  # majority of the last few results per person: no flicker
+        if self._areas is not None:
+            mark(people, self._areas.get(camera.id), width, height)  # feet inside a restricted area = violation
         if people or not self._sent_empty:
             self._client.detections(camera.id, [p.to_payload(width, height) for p in people])
         self._sent_empty = not people

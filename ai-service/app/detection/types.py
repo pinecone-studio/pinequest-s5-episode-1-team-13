@@ -25,6 +25,8 @@ class PersonResult:
     uniform_conf: float = 0.0
     helmet_required: bool = True
     violation: bool = False
+    restricted: bool = False  # feet inside a restricted area
+    area: tuple[tuple[int, int], ...] | None = None  # that area in pixels (for the snapshot picture)
 
     def to_payload(self, width: int, height: int) -> dict:
         """JSON for the dashboard: boxes normalised to 0..1 (web/types DetectionsData)."""
@@ -36,6 +38,7 @@ class PersonResult:
             "uniform": self.uniform,
             "violation": self.violation,
             "helmet_required": self.helmet_required,
+            "restricted": self.restricted,
         }
 
 

@@ -6,14 +6,17 @@ import cv2
 import numpy as np
 
 from app.detection.types import PersonResult
+from app.violations.rules import RESTRICTED_AREA
 
 RED, WHITE = (40, 40, 230), (255, 255, 255)
-LABELS = {"NO_HELMET": "NO HELMET", "NO_WORK_UNIFORM": "NO UNIFORM"}
+LABELS = {"NO_HELMET": "NO HELMET", "NO_WORK_UNIFORM": "NO UNIFORM", RESTRICTED_AREA: "RESTRICTED AREA"}
 
 
 def make_snapshot(frame: np.ndarray, person: PersonResult, vtype: str, quality: int = 85) -> bytes:
     image = frame.copy()
     thickness = max(2, image.shape[1] // 400)
+    if vtype == RESTRICTED_AREA and person.area:
+        cv2.polylines(image, [np.array(person.area, dtype=np.int32)], True, RED, thickness, cv2.LINE_AA)
     x1, y1, x2, y2 = (int(v) for v in person.box)
     cv2.rectangle(image, (x1, y1), (x2, y2), RED, thickness)
     if vtype == "NO_HELMET" and person.helmet_box:

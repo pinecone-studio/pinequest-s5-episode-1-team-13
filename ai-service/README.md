@@ -176,3 +176,24 @@ Trained (YOLO, about 2,700 training pictures) on:
 - "hard-hat & safety-vest" by chihs-workspace, Roboflow Universe, CC BY 4.0
 - "Hard Hat Workers" by joseph-nelson, Roboflow Universe, Public Domain
 - "Safety Vests" by echo-dotf3, Roboflow Universe, CC BY 4.0
+
+## Restricted area
+
+A camera can have one or more forbidden areas (polygons). Anyone whose **feet** (bottom middle of the person box) are
+inside one is a violation: red box on the dashboard, and after `VIOLATION_CONFIRM_SECONDS` a saved violation with the
+area drawn on the picture. Helmet and vest don't matter here. No new model is needed.
+
+The DB has no own violation type for this yet, so it is saved as `OTHER_SAFETY_VIOLATION`
+(already in the DB, backend and web). The live boxes also get `"restricted": true`.
+
+Points are parts of the picture width/height (0..1), at least 3, on the picture the AI sees
+(after rotation, before mirroring). Try them on a photo first, then save them:
+
+```bash
+python -m scripts.demo photo.jpg --area "0.6,0.5 0.95,0.5 0.95,0.95 0.6,0.95"   # check the red area
+python -m scripts.set_area "Gate camera" "0.6,0.5 0.95,0.5 0.95,0.95 0.6,0.95"   # save (DATABASE_URL)
+python -m scripts.set_area --list
+python -m scripts.set_area "Gate camera" --clear
+```
+
+The AI reads the areas from `app_settings` (key `restricted_areas`) every ~10 s, so no restart is needed.
