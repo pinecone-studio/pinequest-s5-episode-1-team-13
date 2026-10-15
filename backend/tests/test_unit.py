@@ -276,3 +276,17 @@ def test_ice_servers_drop_invalid_urls(monkeypatch):
     assert svc.ice_servers() == [{"urls": ["stun:ok.example.com:3478"]}]
     warnings = svc.ice_config_warnings()
     assert any("http://bad.example.com" in w for w in warnings) and any("turn.example.com:3478" in w for w in warnings)
+
+
+def test_restricted_areas_validation():
+    from pydantic import ValidationError
+
+    from app.schemas.camera import RestrictedAreas
+
+    ok = RestrictedAreas(areas=[[(0.5, 0.5), (1, 0.5), (1, 1)]])
+    assert ok.areas == [[(0.5, 0.5), (1.0, 0.5), (1.0, 1.0)]]
+    assert RestrictedAreas().areas == [] and RestrictedAreas(areas=[]).areas == []
+    assert RestrictedAreas(areas=[[(0.123456, 0.5), (1, 0.5), (1, 1)]]).areas[0][0] == (0.1235, 0.5)
+    for bad in ([[(0, 0), (1, 1)]], [[(0, 0), (1.5, 0), (1, 1)]], [[(0, 0), (1, 0), (1, 1)]] * 6, [[(0.1, 0.1)] * 31]):
+        with pytest.raises(ValidationError):
+            RestrictedAreas(areas=bad)

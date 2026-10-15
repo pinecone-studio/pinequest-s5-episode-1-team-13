@@ -117,7 +117,11 @@ export type RealtimeEvent =
   | { type: "VIOLATION_DELETED"; data: { id: string } }
   | { type: "CAMERA_UPDATED"; data: Camera }
   | { type: "CAMERA_DELETED"; data: { id: string } }
-  | { type: "DETECTIONS"; data: DetectionsData };
+  | { type: "DETECTIONS"; data: DetectionsData }
+  | { type: "RESTRICTED_AREA_UPDATED"; data: { camera_id: string; areas: AreaPoint[][] } };
+
+/** Хориотой бүсийн цэг: AI-ийн зураг дээр (эргүүлсний дараа, толин тусгалаас өмнө) 0..1 */
+export type AreaPoint = [number, number];
 
 export type PPEState = "YES" | "NO" | "UNKNOWN";
 
@@ -132,6 +136,7 @@ export interface DetectionsData {
     uniform: PPEState;
     violation: boolean;
     helmet_required?: boolean; // оффис зэрэг бүсэд каск заавал биш (байхгүй бол заавал гэж үзнэ)
+    restricted?: boolean; // хөл нь хориотой бүс дотор
   }[];
 }
 

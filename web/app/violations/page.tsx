@@ -72,6 +72,7 @@ export default function ViolationsPage() {
         </NativeSelect>
         <NativeSelect className="w-48" aria-label="Зөрчлийн төрөл" value={type} onChange={(e) => change(setType)(e.target.value as ViolationType | "")}>
           <option value="">Бүх зөрчил</option><option value="NO_HELMET">Каскгүй</option><option value="NO_WORK_UNIFORM">Ажлын хувцасгүй</option>
+          <option value="OTHER_SAFETY_VIOLATION">Хориотой бүсэд орсон</option>
         </NativeSelect>
         <span className="ml-auto text-sm text-muted-foreground">нийт {total}</span>
       </div>
