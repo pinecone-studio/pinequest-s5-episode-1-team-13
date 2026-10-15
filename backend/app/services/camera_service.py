@@ -10,6 +10,9 @@ import os
 # TCP transport (UDP-ээс найдвартай). cv2 import-оос ӨМНӨ.
 os.environ.setdefault("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;tcp")
 
+import base64
+import hashlib
+import hmac
 import logging
 import socket
 import time
@@ -74,6 +77,59 @@ def public_media_url(db, now: float | None = None) -> str:
             if isinstance(url, str) and url.startswith("https://") and fresh:
                 return url.rstrip("/")
     return settings.mediamtx_public_url.rstrip("/")
+
+
+_STUN_SCHEMES = ("stun:", "stuns:")
+_TURN_SCHEMES = ("turn:", "turns:")
+TURN_USER_SUFFIX = "pinequest"
+
+
+def _split_urls(value: str, schemes: tuple[str, ...]) -> tuple[list[str], list[str]]:
+    """(зөв, буруу) хаягууд. Буруу хаягтай iceServers өгвөл browser-ийн RTCPeerConnection exception шиддэг."""
+    urls = [u.strip() for u in value.split(",") if u.strip()]
+    return [u for u in urls if u.lower().startswith(schemes)], [u for u in urls if not u.lower().startswith(schemes)]
+
+
+def _turn_credentials(now: float | None = None) -> tuple[str, str] | None:
+    s = get_settings()
+    if s.turn_secret:
+        # coturn REST API (use-auth-secret): username = "<дуусах unix хугацаа>:<нэр>", credential = base64(HMAC-SHA1(secret, username))
+        expiry = int(now if now is not None else time.time()) + s.turn_credential_ttl_seconds
+        username = f"{expiry}:{TURN_USER_SUFFIX}"
+        digest = hmac.new(s.turn_secret.encode("utf-8"), username.encode("utf-8"), hashlib.sha1).digest()
+        return username, base64.b64encode(digest).decode("ascii")
+    if s.turn_username and s.turn_password:
+        return s.turn_username, s.turn_password
+    return None
+
+
+def ice_servers(now: float | None = None) -> list[dict]:
+    """Browser-ийн RTCPeerConnection `iceServers` (STUN + TURN). Credential-гүй TURN-ийг browser хүлээж авахгүй тул алгасна."""
+    s = get_settings()
+    servers: list[dict] = []
+    stun, _ = _split_urls(s.webrtc_stun_urls, _STUN_SCHEMES)
+    if stun:
+        servers.append({"urls": stun})
+    turn, _ = _split_urls(s.turn_urls, _TURN_SCHEMES)
+    credentials = _turn_credentials(now) if turn else None
+    if credentials:
+        servers.append({"urls": turn, "username": credentials[0], "credential": credentials[1]})
+    return servers
+
+
+def ice_config_warnings() -> list[str]:
+    """Backend асахад log-д бичих WebRTC ICE тохиргооны алдаанууд (хүсэлт бүрт давтахгүй)."""
+    s = get_settings()
+    warnings = []
+    _, bad_stun = _split_urls(s.webrtc_stun_urls, _STUN_SCHEMES)
+    turn, bad_turn = _split_urls(s.turn_urls, _TURN_SCHEMES)
+    if bad_stun:
+        warnings.append(f"WEBRTC_STUN_URLS: stun:/stuns:-ээр эхлээгүй хаягийг алгаслаа: {', '.join(bad_stun)}")
+    if bad_turn:
+        warnings.append(f"TURN_URLS: turn:/turns:-ээр эхлээгүй хаягийг алгаслаа: {', '.join(bad_turn)}")
+    if turn and _turn_credentials() is None:
+        warnings.append("TURN_URLS тохируулсан ч TURN_SECRET эсвэл TURN_USERNAME/TURN_PASSWORD байхгүй — TURN ашиглагдахгүй")
+    return warnings
 
 
 def to_out(camera: Camera) -> CameraOut:

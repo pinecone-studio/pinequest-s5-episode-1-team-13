@@ -16,6 +16,7 @@ from app.api.deps import COOKIE_NAME, user_from_token
 from app.config import get_settings
 from app.core.logging import setup_logging
 from app.database.database import get_engine, new_session
+from app.services import camera_service
 from app.services.retention import retention_loop
 from app.websocket.manager import manager
 
@@ -40,6 +41,8 @@ async def lifespan(_: FastAPI):
     problems = settings.startup_problems()
     if problems:
         raise RuntimeError("backend/.env дутуу эсвэл буруу байна: " + ", ".join(problems))
+    for warning in camera_service.ice_config_warnings():
+        logger.warning(warning)
     get_engine()
     logger.info("Backend started (env=%s, origins=%s)", settings.app_env, settings.cors_origin_list)
     purge_task = asyncio.create_task(retention_loop())
