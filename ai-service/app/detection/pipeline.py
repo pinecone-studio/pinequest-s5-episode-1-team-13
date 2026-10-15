@@ -32,7 +32,9 @@ class CameraAI:
         motion: MotionGate | None = None,
         min_brightness: float = 0,
         min_sharpness: float = 0,
+        no_conf: float = 0.0,
     ) -> None:
+        self._no_conf = no_conf
         self._motion = motion
         self._min_brightness, self._min_sharpness = min_brightness, min_sharpness
         self._last_problem: str | None = None
@@ -62,7 +64,7 @@ class CameraAI:
 
         height, width = frame.shape[:2]
         detections = self._detector(frame)
-        people = analyse(detections, helmet_required=camera.zone_type != "OFFICE")
+        people = analyse(detections, helmet_required=camera.zone_type != "OFFICE", no_conf=self._no_conf)
         if people or not self._sent_empty:
             self._client.detections(camera.id, [p.to_payload(width, height) for p in people])
         self._sent_empty = not people

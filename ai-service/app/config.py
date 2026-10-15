@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     # Model class name -> our class name, e.g. "hardhat:helmet,no-hardhat:no_helmet". Empty = model already uses our names.
     class_mapping: str = ""
     conf_threshold: float = Field(0.4, ge=0.05, le=0.95)
+    # A "no_helmet" / "no_work_uniform" box must reach this score to count (stricter than CONF_THRESHOLD: fewer false alarms)
+    no_conf_threshold: float = Field(0.55, ge=0.05, le=0.99)
     imgsz: int = Field(640, ge=256, le=1920)
     detect_fps: float = Field(3, ge=0.5, le=15)  # AI runs this many times per second per camera
     device: str = "auto"  # auto | mps (Apple GPU) | cuda (NVIDIA) | cpu

@@ -65,11 +65,11 @@ def draw(frame: np.ndarray, people: list[PersonResult]) -> np.ndarray:
     return out
 
 
-def demo_image(path: Path, out: Path, detect, helmet_required: bool) -> list[PersonResult]:
+def demo_image(path: Path, out: Path, detect, helmet_required: bool, no_conf: float = 0.0) -> list[PersonResult]:
     frame = cv2.imread(str(path))
     if frame is None:
         raise ValueError(f"Cannot read image: {path}")
-    people = analyse(detect(frame), helmet_required=helmet_required)
+    people = analyse(detect(frame), helmet_required=helmet_required, no_conf=no_conf)
     cv2.imwrite(str(out), draw(frame, people))
     return people
 
@@ -102,7 +102,7 @@ class VideoOut:
             self._writer.release()
 
 
-def demo_video(path: Path, out: Path, detect, helmet_required: bool, max_seconds: float | None = None) -> dict:
+def demo_video(path: Path, out: Path, detect, helmet_required: bool, max_seconds: float | None = None, no_conf: float = 0.0) -> dict:
     cap = cv2.VideoCapture(str(path))
     if not cap.isOpened():
         raise ValueError(f"Cannot open video: {path}")
@@ -116,7 +116,7 @@ def demo_video(path: Path, out: Path, detect, helmet_required: bool, max_seconds
             ok, frame = cap.read()
             if not ok or (max_seconds is not None and frames / fps >= max_seconds):
                 break
-            people = analyse(detect(frame), helmet_required=helmet_required)
+            people = analyse(detect(frame), helmet_required=helmet_required, no_conf=no_conf)
             ids.update(p.id for p in people if p.id is not None)
             for vtype, _ in rules.update(people, frames / fps):
                 saved[vtype] += 1
@@ -160,13 +160,13 @@ def main(argv: list[str] | None = None) -> int:
     helmet_required = not args.office
 
     if is_image:
-        people = demo_image(args.file, out, detect, helmet_required)
+        people = demo_image(args.file, out, detect, helmet_required, settings.no_conf_threshold)
         bad = sum(p.violation for p in people)
         print(f"Saved: {out}\nPeople: {len(people)} | violations: {bad}")
         for p in people:
             print(f"  {label(p)}" + ("  <- VIOLATION" if p.violation else ""))
     else:
-        summary = demo_video(args.file, out, detect, helmet_required, args.max_seconds)
+        summary = demo_video(args.file, out, detect, helmet_required, args.max_seconds, settings.no_conf_threshold)
         print(f"Saved: {out}")
         print(f"{summary['seconds']} s, {summary['frames']} frames | different people: {summary['people']}")
         print(f"Violations the live system would save: {summary['violations'] or 'none'}")

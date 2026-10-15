@@ -112,3 +112,24 @@ def test_pipeline_ai_disabled_clears_once():
     assert ai.process(frame, off, now=2.0) is None
     ai.process(frame, off, now=3.0)
     assert client.sent[-1] == ("cam-1", []) and len(client.sent) == 2
+
+
+def test_unsure_no_helmet_is_ignored_with_stricter_no_conf():
+    weak_bare = Detection("no_helmet", 0.45, (125, 85, 175, 135))
+    [p] = analyse([PERSON, weak_bare, VEST], helmet_required=True, no_conf=0.55)
+    assert p.helmet == "UNKNOWN" and not p.violation
+    [p] = analyse([PERSON, weak_bare, VEST], helmet_required=True)  # old behaviour without the setting
+    assert p.helmet == "NO" and p.violation
+
+
+def test_sure_no_and_weak_yes_still_work():
+    sure_bare = Detection("no_helmet", 0.8, (125, 85, 175, 135))
+    weak_vest = Detection("work_uniform", 0.42, (105, 170, 195, 300))
+    [p] = analyse([PERSON, sure_bare, weak_vest], helmet_required=True, no_conf=0.55)
+    assert (p.helmet, p.uniform, p.violation) == ("NO", "YES", True)
+
+
+def test_weak_no_does_not_hide_a_sure_yes():
+    weak_bare = Detection("no_helmet", 0.5, (125, 85, 175, 135))
+    [p] = analyse([PERSON, HEAD_HELMET, weak_bare], helmet_required=True, no_conf=0.55)
+    assert p.helmet == "YES"

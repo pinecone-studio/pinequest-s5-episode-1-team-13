@@ -48,13 +48,16 @@ def _assign(items: list[Detection], people: list[PersonResult], zone: tuple[floa
     return best
 
 
-def analyse(detections: list[Detection], helmet_required: bool, max_people: int = 50) -> list[PersonResult]:
+def analyse(detections: list[Detection], helmet_required: bool, max_people: int = 50, no_conf: float = 0.0) -> list[PersonResult]:
+    """`no_conf`: a no_helmet / no_work_uniform box needs at least this score to count. A missed "NO" only delays an
+    alarm by a frame; a wrong "NO" is a false alarm in front of the user — so "NO" must be surer than "YES"."""
     persons = sorted((d for d in detections if d.cls == "person"), key=lambda d: d.conf, reverse=True)[:max_people]
     people = [PersonResult(id=d.track_id, box=d.box, conf=d.conf, helmet_required=helmet_required) for d in persons]
     judgeable = [p for p in people if p.box[3] - p.box[1] >= MIN_PERSON_HEIGHT]
 
-    heads = [d for d in detections if d.cls in ("helmet", "no_helmet")]
-    bodies = [d for d in detections if d.cls in ("work_uniform", "no_work_uniform")]
+    sure = [d for d in detections if not (d.cls in ("no_helmet", "no_work_uniform") and d.conf < no_conf)]
+    heads = [d for d in sure if d.cls in ("helmet", "no_helmet")]
+    bodies = [d for d in sure if d.cls in ("work_uniform", "no_work_uniform")]
 
     for i, head in _assign(heads, judgeable, HEAD_ZONE).items():
         p = judgeable[i]

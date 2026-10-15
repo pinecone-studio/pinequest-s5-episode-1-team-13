@@ -51,6 +51,7 @@ The AI analyses the **rotated** picture (same as the dashboard shows); mirror is
    to the person whose body area contains it.
 4. For every person: `helmet` and `uniform` = `YES` / `NO` / `UNKNOWN`.
    **Violation** = no helmet (where required) or no uniform. `UNKNOWN` is never a violation, to avoid false alarms.
+   A "NO" box must score at least `NO_CONF_THRESHOLD` (0.55), higher than a normal box (`CONF_THRESHOLD` 0.4).
 5. In **OFFICE** zones a helmet is not required.
 6. **Motion skip:** if nobody was in the picture and less than `MOTION_THRESHOLD` (1 %) of it changed,
    YOLO is skipped. It still runs at least every `MOTION_MAX_SKIP_SECONDS`, and always while people are visible.
