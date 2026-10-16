@@ -24,6 +24,7 @@ from app.detection.device import pick_device
 from app.detection.model import Detector
 from app.detection.motion import MotionGate
 from app.detection.pipeline import CameraAI
+from app.leaked_keys import leaked_names
 from app.logging_setup import setup_logging
 from app.storage import SnapshotStorage
 from app.violations.reporter import ViolationReporter
@@ -46,6 +47,8 @@ def main() -> int:
     if problems:
         logger.error("Fill these in ai-service/.env first: %s", ", ".join(problems))
         return 1
+    for name in leaked_names(settings.secret_values()):
+        logger.error("SECURITY: %s is still an old key that leaked in the public git history — change it now (SECURITY.md)", name)
 
     try:
         parse_mapping(settings.class_mapping)

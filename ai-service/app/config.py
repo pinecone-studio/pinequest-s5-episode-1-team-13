@@ -80,6 +80,15 @@ class Settings(BaseSettings):
     def backend_base(self) -> str:
         return self.backend_url.rstrip("/")
 
+    def secret_values(self) -> dict[str, str]:
+        """For the leaked-key check (app/leaked_keys.py)."""
+        return {
+            "INTERNAL_API_KEY": self.internal_api_key,
+            "CAMERA_SECRET_KEY": self.camera_secret_key,
+            "SUPABASE_SERVICE_ROLE_KEY": self.supabase_service_role_key,
+            "DATABASE_URL": self.database_url,
+        }
+
     def startup_problems(self) -> list[str]:
         """Settings that must be filled before the service can run."""
         problems = []

@@ -83,6 +83,16 @@ class Settings(BaseSettings):
         path = Path(self.log_dir)
         return path if path.is_absolute() else (BACKEND_ROOT / path).resolve()
 
+    def secret_values(self) -> dict[str, str]:
+        """Задарсан түлхүүрийн шалгалтад (app/core/leaked_keys.py)."""
+        return {
+            "INTERNAL_API_KEY": self.internal_api_key,
+            "CAMERA_SECRET_KEY": self.camera_secret_key,
+            "JWT_SECRET": self.jwt_secret,
+            "SUPABASE_SERVICE_ROLE_KEY": self.supabase_service_role_key,
+            "DATABASE_URL": self.database_url,
+        }
+
     def startup_problems(self) -> list[str]:
         """Аюулгүй ажиллахад заавал хэрэгтэй, бөглөгдөөгүй түлхүүрүүд."""
         problems = []
