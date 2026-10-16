@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Power, RotateCw, ShieldBan, Video, VideoOff } from "lucide-react";
+import { CircleAlert, Loader2, Power, RefreshCw, RotateCw, ShieldBan, Video, VideoOff } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/providers/auth-provider";
@@ -9,10 +9,13 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { DetectionOverlay } from "@/components/dashboard/detection-overlay";
 import { RestrictedAreaLayer } from "@/components/dashboard/restricted-area-layer";
 import { CameraStatusBadge } from "@/components/status-badges";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import { IN_APP_HINT, isInAppBrowser } from "@/lib/in-app-browser";
-import { CAMERA_STATUS_LABEL, cameraTone, zoneLabel } from "@/lib/format";
+import { CAMERA_STATUS_LABEL, cameraTone, TONE_CLASS, zoneLabel } from "@/lib/format";
 import { useElementSize } from "@/lib/use-element-size";
+import { cn } from "@/lib/utils";
 import { startWhep, startWhip } from "@/lib/webrtc";
 import type { Camera } from "@/types";
 
@@ -46,6 +49,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
   const [videoProblem, setVideoProblem] = useState<string | null>(null); // жишээ: edge унтраастай
   const { canManageCameras } = useAuth();
   const [editingArea, setEditingArea] = useState(false);
+  const [playbackAttempt, setPlaybackAttempt] = useState(0);
 
   async function rotate() {
     try {
@@ -183,12 +187,27 @@ export function CameraTile({ camera }: { camera: Camera }) {
       pc?.close();
       video.srcObject = null;
     };
-  }, [live, video, camera.id]);
+  }, [live, video, camera.id, playbackAttempt]);
+
+  function reloadPlayback() {
+    setPlaying(false);
+    setVideoProblem(null);
+    setPlaybackAttempt((n) => n + 1);
+  }
+
+  const stageText = !camera.enabled
+    ? "Камер унтраалттай"
+    : videoProblem
+      ? videoProblem
+      : camera.status === "ONLINE" || camera.status === "STREAMING"
+        ? "Видео хүлээж байна…"
+        : CAMERA_STATUS_LABEL[camera.status];
+  const showToolbar = canManageCameras || (camera.enabled && live);
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border bg-black shadow-lg shadow-black/30">
-      <div className="relative aspect-video">
-        <div ref={stageRef} className={`absolute inset-0 overflow-hidden bg-black ${mirror ? "-scale-x-100" : ""}`}>
+    <article className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="relative aspect-video bg-black">
+        <div ref={stageRef} className={cn("absolute inset-0 overflow-hidden bg-black", mirror && "-scale-x-100")}>
           <video
             ref={setVideo}
             autoPlay muted playsInline
@@ -203,78 +222,114 @@ export function CameraTile({ camera }: { camera: Camera }) {
             editing={editingArea && canManageCameras} onDone={() => setEditingArea(false)} />
         )}
         {playing && camera.ai_enabled && <DetectionOverlay cameraId={camera.id} video={video} mirror={mirror} rotation={rotation} />}
-        {playing && !camera.ai_enabled && (
-          <span className="pointer-events-none absolute right-4 top-4 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-            <span className="size-2 rounded-full bg-zinc-500" /> AI салгасан · зөвхөн видео
-          </span>
-        )}
 
         {!playing && (
-          <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-zinc-900 to-zinc-950 text-muted-foreground">
-            <div className="flex max-w-[85%] flex-col items-center gap-3 text-center text-sm">
-              <VideoOff className="size-10" />
-              {camera.enabled ? (live ? (videoProblem ?? "Видео хүлээж байна…") : CAMERA_STATUS_LABEL[camera.status]) : "Камер унтраалттай"}
-              {!camera.enabled && canManageCameras && (
-                <button type="button" disabled={powering} onClick={togglePower}
-                  className="mt-1 flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60">
-                  <Power className="size-4" /> Камер асаах
-                </button>
+          <div className="absolute inset-0 grid place-items-center bg-muted text-muted-foreground">
+            <div className="flex max-w-[85%] flex-col items-center gap-2 px-4 text-center">
+              {!camera.enabled || camera.status === "OFFLINE" ? (
+                <VideoOff className="size-5" />
+              ) : videoProblem || camera.status === "ERROR" ? (
+                <CircleAlert className="size-5" />
+              ) : (
+                <Loader2 className="size-5 animate-spin" />
               )}
+              <p className="text-sm text-foreground">{stageText}</p>
             </div>
           </div>
         )}
 
         {playing && (
-          <span className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold tracking-wider text-red-400 backdrop-blur">
-            <span className="size-2 animate-pulse rounded-full bg-red-500" /> ШУУД
+          <span className="pointer-events-none absolute left-2 top-2 flex items-center gap-1.5 rounded-md bg-black/70 px-2 py-1 text-[11px] font-medium text-white">
+            <span className="size-1.5 animate-pulse rounded-full bg-danger" />
+            Шууд
           </span>
         )}
-
-        {canManageCameras && camera.enabled && (
-          <button
-            type="button" onClick={togglePower} disabled={powering} title="Камерыг унтраах" aria-label="Камерыг унтраах"
-            className="absolute right-4 top-14 grid size-9 place-items-center rounded-full bg-black/60 text-white backdrop-blur transition hover:bg-red-600 disabled:opacity-60"
-          >
-            <Power className="size-4" />
-          </button>
-        )}
-
-        {canManageCameras && browserCam && camera.enabled && (
-          <button
-            type="button" onClick={publishing === "off" ? startPublish : stopPublish}
-            className={`absolute left-4 top-14 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold backdrop-blur transition ${publishing === "off" ? "bg-primary text-primary-foreground hover:opacity-90" : "bg-red-600/80 text-white hover:bg-red-600"}`}
-          >
-            <Video className="size-4" />
-            {publishing === "off" ? "Энэ төхөөрөмжөөс дамжуулах" : publishing === "starting" ? "Холбогдож байна… (зогсоох)" : "Дамжуулалт зогсоох"}
-          </button>
-        )}
-
-        {canManageCameras && playing && !editingArea && (
-          <button
-            type="button" onClick={() => setEditingArea(true)} title="Хориотой бүс зурах" aria-label="Хориотой бүс зурах"
-            className="absolute bottom-16 right-16 grid size-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur transition hover:bg-red-600"
-          >
-            <ShieldBan className="size-5" />
-          </button>
-        )}
-
-        {canManageCameras && (
-          <button
-            type="button" onClick={rotate} title={`Эргүүлэх (дарах бүрт 90°, одоо ${rotation}°)`} aria-label="Камерын харааг эргүүлэх"
-            className="absolute bottom-16 right-4 grid size-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur transition hover:bg-primary hover:text-primary-foreground"
-          >
-            <RotateCw className="size-5 transition-transform duration-300" style={{ transform: `rotate(${rotation}deg)` }} />
-          </button>
-        )}
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-5 pb-4 pt-12">
-          <div className="min-w-0">
-            <div className="truncate text-lg font-semibold text-white">{camera.name}</div>
-            <div className="text-sm text-white/70">{camera.zone ? zoneLabel(camera.zone) : "Бүсгүй"}</div>
-          </div>
-          <CameraStatusBadge status={camera.status} />
-        </div>
       </div>
-    </div>
+
+      <div className="flex flex-col gap-3 px-3 py-3">
+        <div className="flex flex-col gap-2">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium text-foreground">{camera.name}</div>
+            <div className="truncate text-xs text-muted-foreground">{camera.zone ? zoneLabel(camera.zone) : "Бүсгүй"}</div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <CameraStatusBadge status={camera.status} />
+            <Badge variant="outline" className={cn("gap-1.5", camera.ai_enabled && playing ? TONE_CLASS.good : TONE_CLASS.idle)}>
+              <span className="size-1.5 rounded-full bg-current" />
+              {!camera.ai_enabled ? "AI унтраалттай" : playing ? "AI ажиллаж байна" : "AI хүлээгдэж байна"}
+            </Badge>
+          </div>
+        </div>
+
+        {showToolbar && (
+          <div className="flex flex-wrap items-center gap-1 border-t border-border pt-2">
+            {canManageCameras && (
+              <Button
+                type="button"
+                variant="outline"
+                size={camera.enabled ? "icon-sm" : "sm"}
+                disabled={powering}
+                onClick={togglePower}
+                aria-label={camera.enabled ? "Камерыг унтраах" : "Камер асаах"}
+                title={camera.enabled ? "Камерыг унтраах" : "Камер асаах"}
+              >
+                <Power className="size-3.5" />
+                {!camera.enabled && "Асаах"}
+              </Button>
+            )}
+            {canManageCameras && browserCam && camera.enabled && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={publishing === "off" ? startPublish : stopPublish}
+                aria-label={publishing === "off" ? "Энэ төхөөрөмжөөс дамжуулах" : "Дамжуулалт зогсоох"}
+                title={publishing === "off" ? "Энэ төхөөрөмжөөс дамжуулах" : "Дамжуулалт зогсоох"}
+              >
+                {publishing === "starting" ? <Loader2 className="size-3.5 animate-spin" /> : <Video className="size-3.5" />}
+                {publishing === "off" ? "Дамжуулах" : publishing === "starting" ? "Холбогдож байна" : "Зогсоох"}
+              </Button>
+            )}
+            {camera.enabled && live && (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                onClick={reloadPlayback}
+                aria-label="Видеог дахин ачаалах"
+                title="Видеог дахин ачаалах"
+              >
+                <RefreshCw className="size-3.5" />
+              </Button>
+            )}
+            {canManageCameras && <span className="mx-0.5 h-4 w-px bg-border" />}
+            {canManageCameras && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={rotate}
+                title={`Эргүүлэх (дарах бүрт 90°, одоо ${rotation}°)`}
+                aria-label="Камерын харааг эргүүлэх"
+              >
+                <RotateCw className="size-3.5" style={{ transform: `rotate(${rotation}deg)` }} />
+              </Button>
+            )}
+            {canManageCameras && playing && !editingArea && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setEditingArea(true)}
+                title="Хориотой бүс зурах"
+                aria-label="Хориотой бүс зурах"
+              >
+                <ShieldBan className="size-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </article>
   );
 }

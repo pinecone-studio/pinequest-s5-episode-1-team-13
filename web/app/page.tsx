@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { VideoOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CameraTile } from "@/components/dashboard/camera-tile";
@@ -77,13 +78,16 @@ export default function DashboardPage() {
       <StatCards stats={stats} />
 
       <section>
-        <h2 className="mb-3 text-xs font-semibold tracking-[0.2em] text-muted-foreground">КАМЕРЫН ШУУД ХЯНАЛТ</h2>
+        <h2 className="mb-3 text-sm font-medium text-foreground">Камерын шууд хяналт</h2>
         {cameras.length === 0 ? (
-          <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Камер байхгүй байна. Хяналт эхлэхийн тулд <Link href="/cameras" className="text-foreground underline">камер нэмнэ үү</Link>.
-          </CardContent></Card>
+          <div className="rounded-lg border border-border bg-card px-6 py-10 text-center">
+            <VideoOff className="mx-auto size-5 text-muted-foreground" />
+            <p className="mt-2 text-sm text-muted-foreground">
+              Камер байхгүй байна. Хяналт эхлэхийн тулд <Link href="/cameras" className="text-foreground underline">камер нэмнэ үү</Link>.
+            </p>
+          </div>
         ) : (
-          <div className={cameras.length === 1 ? "grid max-w-5xl gap-5" : "grid gap-5 xl:grid-cols-2"}>
+          <div className={cameras.length === 1 ? "grid max-w-3xl grid-cols-1 gap-4" : cameras.length === 2 ? "grid grid-cols-1 gap-4 lg:grid-cols-2" : "grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3"}>
             {cameras.map((camera) => <CameraTile key={camera.id} camera={camera} />)}
           </div>
         )}
