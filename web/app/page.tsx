@@ -72,7 +72,7 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="min-w-0 space-y-8">
+    <div className="min-w-0 space-y-6">
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <StatCards stats={stats} />
 

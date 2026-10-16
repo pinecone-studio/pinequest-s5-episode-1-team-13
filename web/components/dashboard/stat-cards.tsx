@@ -17,7 +17,7 @@ function Stat({
   alert?: boolean;
 }) {
   return (
-    <div className="flex h-full min-h-36 flex-col rounded-xl border border-border bg-card p-4 transition-colors duration-150 hover:bg-muted">
+    <div className="flex h-full min-h-36 flex-col rounded-xl border border-border bg-card p-4 shadow-surface transition-colors duration-150 hover:bg-muted">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           {alert && <span className="size-1.5 rounded-full bg-danger" />}

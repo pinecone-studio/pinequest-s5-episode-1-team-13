@@ -68,7 +68,7 @@ export default function CamerasPage() {
       </div>
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-surface">
         <Table>
           <TableHeader className="bg-muted [&_th]:h-9 [&_th]:px-3 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
             <TableRow className="border-border hover:bg-transparent">
