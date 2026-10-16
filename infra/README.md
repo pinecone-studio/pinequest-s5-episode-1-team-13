@@ -22,6 +22,7 @@ browser камер ─WebRTC (WHIP)─► MediaMTX ─RTSP─► ai-service
 | [`infra/edge/vps.yml`](edge/vps.yml) | VPS: MediaMTX (RTSPS) + Caddy (HTTPS) + edge-announcer |
 | [`infra/edge/ai.yml`](edge/ai.yml) | VPS горимд үйлдвэрийн компьютер: зөвхөн ai-service |
 | [`infra/edge/announce.py`](edge/announce.py) | MediaMTX-ийн HTTPS хаягийг backend-д минут тутам мэдэгдэнэ (`PUT /internal/edge`) |
+| [`infra/edge/mtx_auth.py`](edge/mtx_auth.py) | Edge-ийн MediaMTX нэвтрэлт: backend-ийн дүрмээр edge дээр шууд шийднэ (доорх "MediaMTX нэвтрэлт") |
 
 ## MediaMTX асаах
 
@@ -66,6 +67,30 @@ MediaMTX нь publish/read хүсэлт бүрт backend-ийн `POST /internal/
 
 Path нэр нь `cam_<camera_id>` байх ба backend, ai-service хоёрт **ижил** байх ёстой.
 
+### Edge дээр: mtx-auth
+
+MediaMTX нэвтрэлтийг **нэг нэгээр** асуудаг. Cloud backend 2–10 сек хариулахад dashboard-ын хүсэлтүүд дараалалд
+хуримтлагдаж, ai-service-ийн RTSP нээлт (8 сек) timeout болдог байсан: видео харагдах ч "AI · дохио алга". Тиймээс edge-ийн
+MediaMTX нь backend биш [`mtx_auth.py`](edge/mtx_auth.py)-ээс асууна. Дүрэм нь backend-ийнхтэй яг адил
+(`backend/tests/test_edge_mtx_auth.py` CI дээр харьцуулна):
+
+| Хүсэлт | Шийдэх газар |
+|---|---|
+| ai-service (`ai` + `INTERNAL_API_KEY`) | mtx-auth, шууд |
+| Нууц үг, токен огт байхгүй (RTSP-ийн анхны оролдлого) | mtx-auth, шууд 401 |
+| Dashboard / browser камерын токен | `JWT_SECRET` өгсөн бол mtx-auth, үгүй бол backend руу дамжуулна |
+
+`JWT_SECRET` нь backend-ийнхтэй ижил байх ёстой бөгөөд түүгээр нэвтрэх токен үүсгэж болох нууц. DB-ийн эрх аль хэдийн байдаг
+үйлдвэрийн компьютер дээр (`factory*.yml`) бөглөнө. VPS дээр (`vps.yml`) хоосон үлдээнэ: тэнд ai-service шууд шийдэгдэх тул
+AI-д нөлөөлөхгүй, зөвхөн dashboard-ын токен backend-ээр шалгагдана.
+
+Docker-гүй (Python-оор шууд) edge асаах бол MediaMTX-ийн өмнө mtx-auth-ийг асаагаад MediaMTX-ийг түүн рүү чиглүүлнэ:
+
+```bash
+INTERNAL_API_KEY=... JWT_SECRET=... BACKEND_URL=https://<backend> python3 infra/edge/mtx_auth.py   # 127.0.0.1:8002
+MTX_AUTHHTTPADDRESS=http://127.0.0.1:8002/ MTX_WEBRTCADDITIONALHOSTS=<LAN IP> mediamtx infra/mediamtx.yml
+```
+
 ## Edge-ийг нэг командаар асаах (Docker Compose)
 
 Edge = камертай нэг сүлжээнд ажиллах ai-service + MediaMTX. Backend (Railway) ба web (Vercel) cloud-д байна.
@@ -98,7 +123,7 @@ VPS горим:     IP камер ─► ai-service (үйлдвэр) ─RTSPS :8
 ### Бүгд нэг дор (үйлдвэрийн компьютер)
 
 - `infra/edge/.env`: `BACKEND_URL`, `INTERNAL_API_KEY`, `EDGE_HOSTS=<энэ компьютерийн LAN IP>`, `MODEL_PATH` (заавал биш),
-  `MEDIA_DOMAIN`, `CLOUDFLARE_TUNNEL_TOKEN` (доорх "Тогтмол домэйн").
+  `JWT_SECRET` (заавал биш, санал болгоно — дээрх "Edge дээр: mtx-auth"), `MEDIA_DOMAIN`, `CLOUDFLARE_TUNNEL_TOKEN` (доорх "Тогтмол домэйн").
 - Firewall (Windows Defender): `8189/udp`, `8189/tcp`-г LAN-д нээнэ. Өөр сүлжээнээс үзэх бол router дээр 8189 udp/tcp-г
   port-forward хийж, `EDGE_HOSTS`-д public IP-г нэмнэ (эсвэл TURN — доорх хэсэг).
 - Домэйнгүй үед `factory-quick.yml`: Cloudflare quick tunnel, аккаунтгүй, асах бүрт хаяг солигдоно (edge-announcer шинэ

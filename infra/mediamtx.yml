@@ -21,6 +21,7 @@ logLevel: info
 #   dashboard  : Authorization: Bearer <read токен>    (тухайн cam_<id>-д л, 2 минут)
 #   browser    : Authorization: Bearer <publish токен> (тухайн cam_<id>-д л)
 # Docker / өөр хост дээр: MTX_AUTHHTTPADDRESS=http://backend:8000/internal/mediamtx/auth
+# Edge (cloud backend): MTX_AUTHHTTPADDRESS=http://mtx-auth:8002/ — infra/edge/mtx_auth.py (infra/README.md "Edge дээр: mtx-auth")
 ###############################################
 
 authMethod: http

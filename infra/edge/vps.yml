@@ -30,7 +30,8 @@ services:
       - ../mediamtx.yml:/mediamtx.yml:ro
       - rtsps-certs:/certs:ro
     environment:
-      MTX_AUTHHTTPADDRESS: ${BACKEND_URL:?infra/edge/.env-д BACKEND_URL бөглөнө үү}/internal/mediamtx/auth
+      # Нэвтрэлтийг backend биш mtx-auth шийднэ: backend удаан үед ai-service-ийн RTSPS нээлт timeout болохгүй (mtx_auth.py)
+      MTX_AUTHHTTPADDRESS: http://mtx-auth:8002/
       # Container-ийн IP browser-т хүрэхгүй: VPS-ийн public IP
       MTX_WEBRTCADDITIONALHOSTS: ${EDGE_HOSTS:?infra/edge/.env-д EDGE_HOSTS (VPS-ийн public IP) бөглөнө үү}
       MTX_RTSPENCRYPTION: optional
@@ -44,11 +45,28 @@ services:
     depends_on:
       rtsps-cert:
         condition: service_completed_successfully
+      mtx-auth:
+        condition: service_started
     logging: &logging
       driver: json-file
       options:
         max-size: 10m
         max-file: "3"
+
+  mtx-auth:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    command: python /mtx_auth.py
+    volumes:
+      - ./mtx_auth.py:/mtx_auth.py:ro
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?infra/edge/.env-д INTERNAL_API_KEY бөглөнө үү}
+      # VPS дээр JWT_SECRET-ийг хоосон үлдээхийг санал болгоно (infra/README.md "MediaMTX нэвтрэлт")
+      JWT_SECRET: ${JWT_SECRET:-}
+      BACKEND_URL: ${BACKEND_URL:?infra/edge/.env-д BACKEND_URL бөглөнө үү}
+      MTX_AUTH_HOST: 0.0.0.0  # зөвхөн compose-ийн дотоод сүлжээнд (port гадагш нээхгүй)
+      PYTHONUNBUFFERED: "1"
+    logging: *logging
 
   caddy:
     image: caddy:2.11
