@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BrainCircuit, Camera, LayoutDashboard, LogOut, Settings, Shield, TriangleAlert, Volume2, VolumeX } from "lucide-react";
+import { BrainCircuit, Camera, LayoutDashboard, LogOut, Settings, ShieldAlert, TriangleAlert, Volume2, VolumeX } from "lucide-react";
 
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRealtimeStatus } from "@/components/providers/realtime-provider";
@@ -21,7 +21,9 @@ const NAV: { href: string; label: string; icon: typeof Camera; adminOnly?: boole
 ];
 
 function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href)
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
 function InAppBrowserBanner() {
   const inApp = useInAppBrowser();
   if (!inApp) return null;
