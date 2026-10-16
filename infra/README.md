@@ -92,12 +92,12 @@ VPS горим:     IP камер ─► ai-service (үйлдвэр) ─RTSPS :8
    container бүр `restart: unless-stopped`). Linux/VPS: `curl -fsSL https://get.docker.com | sh`.
 2. Repo-г clone хийнэ. `cp infra/edge/.env.example infra/edge/.env` хийгээд бөглөнө (тайлбар файл дотор).
 3. AI ажиллах машин дээр (factory/ai): `ai-service/.env` (DB, Supabase, CAMERA_SECRET_KEY) бөглөсөн, модель
-   `training/models/<MODEL_FILE>`-д байна. `BACKEND_URL`, `INTERNAL_API_KEY`-г `infra/edge/.env`-ээс авна.
+   анхдагчаар `ai-service/models/ppe-ours-v2.pt` (git-д байгаа), өөр модель бол `MODEL_PATH=/training/models/<файл>`. `BACKEND_URL`, `INTERNAL_API_KEY`-г `infra/edge/.env`-ээс авна.
 4. Backend (Railway): `CAMERA_PROBE_ENABLED=false` (edge-ийн хаягийг дагана).
 
 ### Бүгд нэг дор (үйлдвэрийн компьютер)
 
-- `infra/edge/.env`: `BACKEND_URL`, `INTERNAL_API_KEY`, `EDGE_HOSTS=<энэ компьютерийн LAN IP>`, `MODEL_FILE`,
+- `infra/edge/.env`: `BACKEND_URL`, `INTERNAL_API_KEY`, `EDGE_HOSTS=<энэ компьютерийн LAN IP>`, `MODEL_PATH` (заавал биш),
   `MEDIA_DOMAIN`, `CLOUDFLARE_TUNNEL_TOKEN` (доорх "Тогтмол домэйн").
 - Firewall (Windows Defender): `8189/udp`, `8189/tcp`-г LAN-д нээнэ. Өөр сүлжээнээс үзэх бол router дээр 8189 udp/tcp-г
   port-forward хийж, `EDGE_HOSTS`-д public IP-г нэмнэ (эсвэл TURN — доорх хэсэг).
@@ -132,7 +132,7 @@ VPS дээр (`vps.yml`):
   боломжтой бол зөвхөн үйлдвэрийн public IP-д). `8554` (ил RTSP)-ийг гадагш нээхгүй.
 - RTSPS-ийн self-signed сертификатыг анх асахад `rtsps-cert` үүсгэнэ (`rtsps-certs` volume, 10 жил).
 
-Үйлдвэрийн компьютер дээр (`ai.yml`): `infra/edge/.env`-д `BACKEND_URL`, `INTERNAL_API_KEY`, `MODEL_FILE`,
+Үйлдвэрийн компьютер дээр (`ai.yml`): `infra/edge/.env`-д `BACKEND_URL`, `INTERNAL_API_KEY`, `MODEL_PATH` (заавал биш),
 `MEDIAMTX_RTSP_URL=rtsps://<MEDIA_DOMAIN>:8322`. Камерууд руу зөвхөн гарах холболт хэрэгтэй, port-forward шаардлагагүй.
 
 ### Шалгах, засвар
