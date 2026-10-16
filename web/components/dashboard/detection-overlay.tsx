@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRealtimeEvents, useRealtimeStatus } from "@/components/providers/realtime-provider";
 import type { DetectionsData, PPEState } from "@/types";
 
+const GLIDE_MS = 90; // боксыг AI-ийн шинэ байрлал руу зөөлөн гулсуулна (үсрэхгүй, хүнийг дагана)
 const STALE_MS = 1500; // AI-аас шинэ илрүүлэлт ирэхгүй бол боксыг арилгана
 const RED = "#e5202e";
 const GREEN = "#1fb25a";
@@ -28,6 +29,8 @@ export function DetectionOverlay({ cameraId, video, mirror, rotation = 0, onActi
   useEffect(() => { mirrorRef.current = mirror; rotationRef.current = rotation; });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const latest = useRef<{ data: DetectionsData; at: number } | null>(null);
+  const lastFrame = useRef(0);
+  const shown = useRef(new Map<string, [number, number, number, number]>()); // дэлгэц дээр одоо зурж буй бокс, хүн бүрээр
 
   useRealtimeEvents((event) => {
     if (event.type === "DETECTIONS" && event.data.camera_id === cameraId) {
@@ -67,7 +70,19 @@ export function DetectionOverlay({ cameraId, video, mirror, rotation = 0, onActi
       ctx.font = `700 ${font}px Inter, system-ui, sans-serif`;
       ctx.textBaseline = "middle";
 
-      for (const p of cur.data.people) {
+      const tNow = performance.now();
+      const k = 1 - Math.exp(-(tNow - (lastFrame.current || tNow)) / GLIDE_MS);
+      lastFrame.current = tNow;
+      const seen = new Set<string>();
+      cur.data.people.forEach((raw, i) => {
+        // Хүн бүрийн бокс шинэ байрлал руу гулсана; каскны боксыг ч мөн адил зөөнө
+        const key = raw.id != null ? `id${raw.id}` : `i${i}`;
+        seen.add(key);
+        const prev = shown.current.get(key) ?? raw.box;
+        const box = prev.map((v, j) => v + (raw.box[j] - v) * k) as [number, number, number, number];
+        shown.current.set(key, box);
+        const dx = box[0] - raw.box[0], dy = box[1] - raw.box[1];
+        const p = { ...raw, box, helmet_box: raw.helmet_box ? [raw.helmet_box[0] + dx, raw.helmet_box[1] + dy, raw.helmet_box[2] + dx, raw.helmet_box[3] + dy] as [number, number, number, number] : raw.helmet_box };
         const helmetRequired = p.helmet_required !== false;
         const color = p.violation ? RED : p.helmet === "UNKNOWN" && p.uniform === "UNKNOWN" ? GREY : GREEN;
         const bx1 = mirrorRef.current ? 1 - p.box[2] : p.box[0];  // толин тусгал: зөвхөн x тэнхлэг эргэнэ, текст эргэхгүй
@@ -106,7 +121,8 @@ export function DetectionOverlay({ cameraId, video, mirror, rotation = 0, onActi
         ctx.fillRect(x1 - ctx.lineWidth / 2, cy, chipW, chipH);
         ctx.fillStyle = "#fff";
         ctx.fillText(text, x1 - ctx.lineWidth / 2 + padX, cy + chipH / 2);
-      }
+      });
+      for (const key of [...shown.current.keys()]) if (!seen.has(key)) shown.current.delete(key); // гарсан хүмүүсийг мартана
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);

@@ -9,6 +9,7 @@ import logging
 import signal
 import sys
 import threading
+from pathlib import Path
 
 from app.backend_client import BackendClient
 from app.cameras import repository
@@ -66,7 +67,9 @@ def main() -> int:
     secrets = SecretBox(settings.camera_secret_key)
 
     def make_detector() -> Detector:
-        return Detector(settings.resolved_model_path, settings.class_mapping, settings.conf_threshold, settings.imgsz, settings.device)
+        onnx_cache = Path(settings.onnx_cache_dir) if settings.onnx_cache_dir else None
+        return Detector(settings.resolved_model_path, settings.class_mapping, settings.conf_threshold, settings.imgsz,
+                        settings.device, onnx_cache)  # fmt: skip
 
     storage = SnapshotStorage(settings.supabase_url, settings.supabase_service_role_key, settings.supabase_storage_bucket)
     if not storage.enabled:

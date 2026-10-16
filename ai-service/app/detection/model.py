@@ -9,6 +9,7 @@ import numpy as np
 
 from app.detection.classes import parse_mapping, resolve_names
 from app.detection.device import pick_device
+from app.detection.onnx_cache import cached_onnx
 from app.detection.tracker import PersonTracker
 from app.detection.types import Detection
 
@@ -16,10 +17,22 @@ logger = logging.getLogger("ai.model")
 
 
 class Detector:
-    def __init__(self, model_path: Path, class_mapping: str, conf: float, imgsz: int, device: str = "auto") -> None:
+    def __init__(
+        self,
+        model_path: Path,
+        class_mapping: str,
+        conf: float,
+        imgsz: int,
+        device: str = "auto",
+        onnx_cache: Path | None = None,
+    ) -> None:
         from ultralytics import YOLO  # heavy import, only when a camera actually needs the AI
 
         self.device = pick_device(device, model_path)
+        if onnx_cache is not None and self.device == "cpu":  # CPU only: ONNX Runtime is ~1.7x faster there
+            fast = cached_onnx(model_path, imgsz, onnx_cache)
+            if fast is not None:
+                model_path = fast
         self._model = YOLO(str(model_path), task="detect")
         self._names = resolve_names(dict(self._model.names), parse_mapping(class_mapping))
         self._conf, self._imgsz = conf, imgsz
