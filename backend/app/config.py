@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -47,6 +48,9 @@ class Settings(BaseSettings):
     # Login хуудасны "Demo" товч: энэ имэйлтэй HUB_EMPLOYEE (админ биш) хэрэглэгчээр нууц үггүй нэвтэрнэ
     demo_login_enabled: bool = False
     demo_user_email: str = "demo@pinequest.app"
+    # ADMIN = demo хэрэглэгч админы бүх эрхтэй (танилцуулгын үед л). Сайтыг нээсэн ХЭН Ч нууц үггүй админ болно — дууссаны дараа
+    # HUB_EMPLOYEE болгож, хэрэглэгчдийн жагсаалтыг шалгана. DB-д demo бүртгэл HUB_EMPLOYEE хэвээр (бодит админы имэйлийг demo болгож болохгүй).
+    demo_user_role: Literal["HUB_EMPLOYEE", "ADMIN"] = "HUB_EMPLOYEE"
 
     # Snapshot зураг + зөрчлийн бүртгэлийг энэ хугацаанаас хойш автоматаар устгана (минут). 0 = хэзээ ч устгахгүй.
     snapshot_retention_minutes: int = Field(10080, ge=0)  # анхдагч 7 хоног
@@ -68,6 +72,9 @@ class Settings(BaseSettings):
 
     def is_demo_email(self, email: str) -> bool:
         return self.demo_login_enabled and email.lower() == self.demo_user_email.lower()
+
+    def is_demo_admin(self, email: str) -> bool:
+        return self.demo_user_role == "ADMIN" and self.is_demo_email(email)
 
     @property
     def resolved_training_dir(self) -> Path:

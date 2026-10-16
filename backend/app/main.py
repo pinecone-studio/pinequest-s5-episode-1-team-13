@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import auth, cameras, dashboard, health, internal, mediamtx, training, users, violations, zones
-from app.api.deps import COOKIE_NAME, user_from_token
+from app.api.deps import COOKIE_NAME, effective_role, user_from_token
 from app.config import get_settings
 from app.core.leaked_keys import leaked_names
 from app.core.logging import setup_logging
@@ -124,9 +124,9 @@ async def websocket_endpoint(ws: WebSocket):
         return
 
     await manager.connect(ws)
-    logger.info("WebSocket холбогдлоо | role=%s clients=%d", user.role.value, manager.count)
+    logger.info("WebSocket холбогдлоо | role=%s clients=%d", effective_role(user).value, manager.count)
     try:
-        await ws.send_json({"type": "CONNECTED", "data": {"role": user.role.value}})
+        await ws.send_json({"type": "CONNECTED", "data": {"role": effective_role(user).value}})
         while True:
             message = await ws.receive_text()
             if message == "ping":

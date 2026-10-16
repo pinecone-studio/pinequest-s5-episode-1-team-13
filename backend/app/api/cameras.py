@@ -42,9 +42,10 @@ def _remember_demo_camera(db: Session, camera_id: uuid.UUID) -> None:
 
 
 def _get_managed(db: Session, camera_id: uuid.UUID, user: User) -> Camera:
-    """Demo хэрэглэгч бодит камеруудыг өөрчилж/устгаж чадахгүй — зөвхөн өөрийн нэмснийг."""
+    """Demo хэрэглэгч бодит камеруудыг өөрчилж/устгаж чадахгүй — зөвхөн өөрийн нэмснийг (DEMO_USER_ROLE=ADMIN үед бүгдийг)."""
     camera = _get_or_404(db, camera_id)
-    if get_settings().is_demo_email(user.email) and str(camera_id) not in _demo_camera_ids(db):
+    settings = get_settings()
+    if settings.is_demo_email(user.email) and not settings.is_demo_admin(user.email) and str(camera_id) not in _demo_camera_ids(db):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Demo эрхээр зөвхөн өөрийн нэмсэн камерыг өөрчилнө")
     return camera
 

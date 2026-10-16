@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr, computed_field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr, computed_field, model_validator
 
 from app.config import get_settings
 from app.core.security import MIN_PASSWORD_LENGTH
@@ -30,6 +30,12 @@ class UserOut(BaseModel):
     @property
     def is_demo(self) -> bool:
         return get_settings().is_demo_email(self.email)
+
+    @model_validator(mode="after")
+    def _demo_admin_role(self) -> UserOut:
+        if get_settings().is_demo_admin(self.email):  # DEMO_USER_ROLE=ADMIN: frontend админы цэсийг харуулна
+            self.role = UserRole.ADMIN
+        return self
 
 
 class UserCreate(BaseModel):
