@@ -205,7 +205,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
   const showToolbar = canManageCameras || (camera.enabled && live);
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-card">
+    <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-surface">
       <div className="relative aspect-video bg-black">
         <div ref={stageRef} className={cn("absolute inset-0 overflow-hidden bg-black", mirror && "-scale-x-100")}>
           <video

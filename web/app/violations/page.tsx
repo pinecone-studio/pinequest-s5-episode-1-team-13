@@ -56,22 +56,22 @@ export default function ViolationsPage() {
   return (
     <div className="min-w-0 space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex rounded-lg border border-border p-0.5">
+        <div className="flex h-10 items-center rounded-lg border border-border bg-white p-1">
           {STATUSES.map((s) => (
             <button
               key={s.label}
               type="button"
               onClick={() => change(setStatus)(s.value)}
-              className={cn("h-8 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:text-foreground", status === s.value && "bg-muted font-medium text-foreground")}
+              className={cn("h-full rounded-md px-4 text-sm text-muted-foreground transition-colors hover:text-foreground", status === s.value && "bg-muted font-medium text-foreground")}
             >
               {s.label}
             </button>
           ))}
         </div>
-        <NativeSelect className="w-40" aria-label="Бүс" value={zone} onChange={(e) => change(setZone)(e.target.value as ZoneName | "")}>
+        <NativeSelect className="h-10 w-40" aria-label="Бүс" value={zone} onChange={(e) => change(setZone)(e.target.value as ZoneName | "")}>
           <option value="">Бүх бүс</option><option value="FACTORY">Үйлдвэр</option><option value="OFFICE">Оффис</option>
         </NativeSelect>
-        <NativeSelect className="w-48" aria-label="Зөрчлийн төрөл" value={type} onChange={(e) => change(setType)(e.target.value as ViolationType | "")}>
+        <NativeSelect className="h-10 w-48" aria-label="Зөрчлийн төрөл" value={type} onChange={(e) => change(setType)(e.target.value as ViolationType | "")}>
           <option value="">Бүх зөрчил</option><option value="NO_HELMET">Каскгүй</option><option value="NO_WORK_UNIFORM">Ажлын хувцасгүй</option>
           <option value="OTHER_SAFETY_VIOLATION">Хориотой бүсэд орсон</option>
         </NativeSelect>

@@ -24,7 +24,7 @@ function Snapshot({ url }: { url: string | null }) {
 
 export function ViolationTable({ items, onOpen, empty = "Зөрчил алга" }: { items: Violation[]; onOpen: (v: Violation) => void; empty?: string }) {
   return (
-    <div className="max-w-full overflow-hidden rounded-xl border border-border bg-card">
+    <div className="max-w-full overflow-hidden rounded-xl border border-border bg-card shadow-surface">
       <Table>
         <TableHeader className="bg-muted">
           <TableRow className="border-border hover:bg-transparent">
