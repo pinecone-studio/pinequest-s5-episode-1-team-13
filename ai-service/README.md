@@ -63,7 +63,11 @@ The AI analyses the **rotated** picture (same as the dashboard shows); mirror is
 - A "NO" must be seen for `VIOLATION_CONFIRM_SECONDS` (default 2 s) — one wrong frame is not enough.
 - Then: snapshot (person marked in red) → Supabase Storage `violation-snapshots/<camera>/<yyyy/mm/dd>/<id>.jpg`
   → new row in `violations` → `POST /internal/violations/{id}/created` → the dashboard shows it instantly.
-- The same person (tracker id) with the same violation is saved again only after `VIOLATION_COOLDOWN_SECONDS`.
+- **One violation per person per visit.** While a person keeps the same problem it is saved once (gaps under 10 s,
+  like someone walking in front, are the same visit). `VIOLATION_REPEAT_SECONDS` saves it again during a very long
+  visit (default 0 = never).
+- A person who leaves and comes back is a new visit, but it is saved again only after `VIOLATION_COOLDOWN_SECONDS`.
+- If the tracker loses a person and gives them a new id in the same place, it still counts as the same person.
 - If the upload fails the violation is still saved, just without a picture.
 - Frames that are too **dark** (`MIN_BRIGHTNESS`) or too **blurry** (`MIN_SHARPNESS`) are not used for violations or
   training pictures; the live boxes still show. Night or a dirty lens no longer creates false "NO helmet" alarms.

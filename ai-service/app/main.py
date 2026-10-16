@@ -78,7 +78,7 @@ def main() -> int:
     image_counter = ImageCounter(dataset_root / "datasets" / "raw")
 
     def make_ai() -> CameraAI:
-        rules = ViolationRules(settings.violation_confirm_seconds, settings.violation_cooldown_seconds)
+        rules = ViolationRules(settings.violation_confirm_seconds, settings.violation_cooldown_seconds, settings.violation_repeat_seconds)
         collector = DatasetCollector(dataset_root, collection, image_counter)
         motion = MotionGate(settings.motion_threshold, settings.motion_max_skip_seconds) if settings.motion_skip else None
         return CameraAI(
