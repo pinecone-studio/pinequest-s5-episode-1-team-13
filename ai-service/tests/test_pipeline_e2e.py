@@ -113,6 +113,7 @@ def test_bare_head_becomes_one_saved_violation_on_the_dashboard():
         worker.stop()
         worker.join(timeout=5)
         reporter.close()
+        client.close()  # status and boxes are sent in the background: wait for them
 
     # 1. Camera status went CONNECTING -> STREAMING -> OFFLINE, saved in the DB and announced each time
     assert db.statuses[0] == "CONNECTING" and "STREAMING" in db.statuses and db.statuses[-1] == "OFFLINE"
@@ -158,5 +159,6 @@ def test_ai_disabled_camera_sends_no_boxes_and_saves_nothing():
         worker.stop()
         worker.join(timeout=5)
         reporter.close()
+        client.close()  # status and boxes are sent in the background: wait for them
 
     assert calls == [] and backend.paths("/detections") == [] and db.inserted == []
