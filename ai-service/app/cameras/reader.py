@@ -51,7 +51,7 @@ class FrameReader(threading.Thread):
         super().__init__(name=f"reader-{name}", daemon=True)
         self._source = source
         self._open = open_fn
-        self._stop = threading.Event()
+        self._stop_event = threading.Event()
         self._lock = threading.Lock()
         self._frame: np.ndarray | None = None
         self._frame_time = 0.0
@@ -65,18 +65,18 @@ class FrameReader(threading.Thread):
             return self._frame, self._seq, self._frame_time
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()
 
     def run(self) -> None:
         backoff = 1.0
         label = safe_label(self._source)
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
             cap = self._open(self._source)
             if not cap.isOpened():
                 self.state = ERROR if backoff >= MAX_BACKOFF else RECONNECTING
                 logger.warning("Cannot open %s, retry in %.0fs%s", label, backoff, webcam_hint(self._source))
                 cap.release()
-                self._stop.wait(backoff)
+                self._stop_event.wait(backoff)
                 backoff = min(backoff * 2, MAX_BACKOFF)
                 continue
 
@@ -85,7 +85,7 @@ class FrameReader(threading.Thread):
             logger.info("Connected %s (%.0f fps)", label, self.fps)
             backoff = 1.0
             last_ok = time.time()
-            while not self._stop.is_set():
+            while not self._stop_event.is_set():
                 ok, frame = cap.read()
                 now = time.time()
                 if ok and frame is not None:

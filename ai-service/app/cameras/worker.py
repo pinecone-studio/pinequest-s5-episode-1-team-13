@@ -28,7 +28,7 @@ class CameraWorker(threading.Thread):
         super().__init__(name=f"camera-{camera.name}", daemon=True)
         self.camera = camera
         self._settings, self._db, self._client = settings, db, client
-        self._stop = threading.Event()
+        self._stop_event = threading.Event()
         self._status: str | None = None
         self.ai = ai
         self.stats = CameraStats(camera.name, settings.stats_seconds, time.time())
@@ -45,7 +45,7 @@ class CameraWorker(threading.Thread):
         self.camera = camera
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()
 
     def _report(self, status: str) -> None:
         if status == self._status:
@@ -72,7 +72,7 @@ class CameraWorker(threading.Thread):
         interval = 1.0 / self._settings.publish_fps
         last_seq = -1
         try:
-            while not self._stop.is_set():
+            while not self._stop_event.is_set():
                 started = time.time()
                 frame, seq, _ = self.reader.latest()
                 self._report(self.reader.state)
@@ -86,7 +86,7 @@ class CameraWorker(threading.Thread):
                     except Exception:  # noqa: BLE001
                         logger.exception("AI step failed for %s", self.camera.name)
                 self.stats.maybe_log(time.time(), self._status or "?")
-                self._stop.wait(max(0.0, interval - (time.time() - started)))
+                self._stop_event.wait(max(0.0, interval - (time.time() - started)))
         finally:
             self.reader.stop()
             if self.publisher is not None:
