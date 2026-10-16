@@ -47,15 +47,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const title = nav.find((item) => isActive(pathname, item.href))?.label ?? "Хяналтын самбар";
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen">
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-background md:flex">
-        <div className="flex items-center gap-3 border-b border-border px-4 py-4">
-          <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border text-foreground">
-            <Shield className="size-4" />
-          </span>
-          <div className="min-w-0 leading-tight">
-            <div className="truncate text-sm font-medium text-foreground">AI хяналт</div>
-            <div className="truncate text-xs text-muted-foreground">Удирдлагын төв</div>
+        <div className="flex items-center gap-2 border-b px-5 py-4">
+          <ShieldAlert className="size-5 text-primary" />
+          <div className="leading-tight">
+            <div className="text-sm font-semibold tracking-wide">AI ХЯНАЛТ</div>
+            <div className="text-[11px] text-muted-foreground">Удирдлагын төв</div>
           </div>
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
@@ -66,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex h-10 items-center gap-3 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
                   active && "bg-foreground font-medium text-background hover:bg-foreground hover:text-background",
                 )}
               >
@@ -112,8 +110,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               {sound ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
             </button>
-            <span className="flex items-center gap-2 px-2 text-xs text-muted-foreground" title="Бодит цагийн холболт">
-              <span className={cn("size-1.5 rounded-full", connected ? "bg-success" : "animate-pulse bg-danger")} />
+            <span className="flex items-center gap-2 text-xs text-muted-foreground" title="Бодит цагийн холболт">
+              <span className={cn("size-2 rounded-full", connected ? "bg-success" : "bg-danger animate-pulse")} />
               {connected ? "Шууд" : "Дахин холбогдож байна…"}
             </span>
             <span className="mx-1 hidden h-4 w-px bg-border sm:block" />
