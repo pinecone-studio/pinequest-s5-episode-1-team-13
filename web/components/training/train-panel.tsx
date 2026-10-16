@@ -117,7 +117,7 @@ export function TrainPanel({ status }: { status: TrainingStatus }) {
               <div className="text-xs text-muted-foreground">
                 Test өгөгдөл ({state.metrics.images.test} зураг, сургалтад ороогүй): mAP50 <b className="text-foreground">{state.metrics.map50}</b> · mAP50-95 {state.metrics.map50_95}
               </div>
-              <div className="overflow-hidden rounded-lg border border-border">
+              <div className="overflow-hidden rounded-xl border border-border">
                 <Table>
                   <TableHeader className="bg-muted [&_th]:h-9 [&_th]:px-3 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground"><TableRow className="border-border hover:bg-transparent"><TableHead>Ангилал</TableHead><TableHead>Нарийвчлал</TableHead><TableHead>Илрүүлэлт</TableHead><TableHead>mAP50</TableHead></TableRow></TableHeader>
                   <TableBody>

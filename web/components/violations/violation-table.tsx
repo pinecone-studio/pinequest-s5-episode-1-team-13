@@ -11,7 +11,7 @@ const cell = "px-3 py-2";
 
 function Snapshot({ url }: { url: string | null }) {
   return (
-    <div className="aspect-video w-20 overflow-hidden rounded-md bg-muted">
+    <div className="aspect-video w-20 overflow-hidden rounded-lg bg-muted">
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt="" className="size-full object-cover" loading="lazy" />
@@ -24,7 +24,7 @@ function Snapshot({ url }: { url: string | null }) {
 
 export function ViolationTable({ items, onOpen, empty = "Зөрчил алга" }: { items: Violation[]; onOpen: (v: Violation) => void; empty?: string }) {
   return (
-    <div className="max-w-full overflow-hidden rounded-lg border border-border bg-card">
+    <div className="max-w-full overflow-hidden rounded-xl border border-border bg-card">
       <Table>
         <TableHeader className="bg-muted">
           <TableRow className="border-border hover:bg-transparent">
@@ -45,8 +45,8 @@ export function ViolationTable({ items, onOpen, empty = "Зөрчил алга" 
             </TableRow>
           )}
           {items.map((v) => (
-            <TableRow key={v.id} className="cursor-pointer border-border hover:bg-muted/40" onClick={() => onOpen(v)}>
-              <TableCell className={`${cell} sticky left-0 bg-card`}><Snapshot url={v.snapshot_url} /></TableCell>
+            <TableRow key={v.id} className="group cursor-pointer border-border hover:bg-muted" onClick={() => onOpen(v)}>
+              <TableCell className={`${cell} sticky left-0 bg-card group-hover:bg-muted`}><Snapshot url={v.snapshot_url} /></TableCell>
               <TableCell className={cell}><ViolationTypeBadge type={v.violation_type} /></TableCell>
               <TableCell className={`${cell} max-w-40`}>
                 <span className="block truncate" title={v.camera_name}>{v.camera_name}</span>

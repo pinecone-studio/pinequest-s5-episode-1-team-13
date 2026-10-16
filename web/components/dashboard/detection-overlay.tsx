@@ -123,8 +123,8 @@ export function DetectionOverlay({ cameraId, video, mirror, rotation = 0 }: { ca
   return (
     <>
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 size-full" />
-      <span className="pointer-events-none absolute right-4 top-4 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-        <span className={`size-2 rounded-full ${!connected ? "bg-red-500" : peopleCount === null ? "bg-zinc-500" : "bg-emerald-400"}`} />
+      <span className="pointer-events-none absolute right-3 top-3 flex items-center gap-2 rounded-lg bg-black/70 px-2 py-1 text-[11px] font-medium text-white">
+        <span className={`size-1.5 rounded-full ${!connected ? "bg-danger" : peopleCount === null ? "bg-white/50" : "bg-success"}`} />
         {!connected ? "AI · холболт тасарсан" : peopleCount === null ? "AI · дохио алга" : `AI · ${peopleCount} хүн`}
       </span>
     </>

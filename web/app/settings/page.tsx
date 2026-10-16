@@ -56,7 +56,7 @@ function Users() {
     <Card>
       <CardHeader><CardTitle className="text-sm font-medium">Хэрэглэгч ба эрх</CardTitle></CardHeader>
       <CardContent className="space-y-6">
-        <div className="overflow-hidden rounded-lg border border-border">
+        <div className="overflow-hidden rounded-xl border border-border">
           <Table>
             <TableHeader className="bg-muted [&_th]:h-9 [&_th]:px-3 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground"><TableRow className="border-border hover:bg-transparent"><TableHead>Имэйл</TableHead><TableHead>Нэр</TableHead><TableHead>Эрх</TableHead><TableHead>Сүүлд нэвтэрсэн</TableHead><TableHead>Идэвх</TableHead></TableRow></TableHeader>
             <TableBody>

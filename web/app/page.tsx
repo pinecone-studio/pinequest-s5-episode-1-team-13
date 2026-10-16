@@ -72,15 +72,15 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-8">
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <StatCards stats={stats} />
 
       <section>
         <h2 className="mb-4 text-sm font-medium text-foreground">Камерын шууд хяналт</h2>
         {cameras.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card px-6 py-10 text-center">
-            <VideoOff className="mx-auto size-5 text-muted-foreground" />
+          <div className="rounded-3xl border border-border bg-card px-6 py-10 text-center">
+            <VideoOff className="mx-auto size-4 text-muted-foreground" />
             <p className="mt-2 text-sm text-muted-foreground">
               Камер байхгүй байна. Хяналт эхлэхийн тулд <Link href="/cameras" className="text-foreground underline">камер нэмнэ үү</Link>.
             </p>
