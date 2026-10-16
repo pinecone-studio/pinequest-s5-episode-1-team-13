@@ -22,6 +22,7 @@ const KNOWN_ERRORS: Record<string, string> = {
   "No recent frame": "Саяхны зураг алга",
   "Origin not allowed": "Хүсэлтийн эх сурвалж зөвшөөрөгдөөгүй",
   "Unknown zone_id": "Тодорхойгүй бүс",
+  "Video server offline": "Видео сервер (edge компьютер) унтраастай байна — камертай компьютер дээр edge-ийг асаана уу",
 };
 
 function describe(detail: unknown): string {
