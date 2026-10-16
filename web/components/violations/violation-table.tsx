@@ -6,8 +6,8 @@ import { ViolationStatusBadge, ViolationTypeBadge } from "@/components/status-ba
 import { formatConfidence, formatTime, zoneLabel } from "@/lib/format";
 import type { Violation } from "@/types";
 
-const head = "h-9 px-3 text-xs font-medium text-muted-foreground";
-const cell = "px-3 py-2";
+const head = "h-11 px-3 text-[15px] font-medium text-muted-foreground";
+const cell = "px-3 py-2.5 text-[15px]";
 
 function Snapshot({ url }: { url: string | null }) {
   return (
@@ -47,16 +47,16 @@ export function ViolationTable({ items, onOpen, empty = "Зөрчил алга" 
           {items.map((v) => (
             <TableRow key={v.id} className="group cursor-pointer border-border hover:bg-muted" onClick={() => onOpen(v)}>
               <TableCell className={`${cell} sticky left-0 bg-card group-hover:bg-muted`}><Snapshot url={v.snapshot_url} /></TableCell>
-              <TableCell className={cell}><ViolationTypeBadge type={v.violation_type} /></TableCell>
+              <TableCell className={cell}><ViolationTypeBadge type={v.violation_type} className="h-6 px-2.5 text-[13px]" /></TableCell>
               <TableCell className={`${cell} max-w-40`}>
                 <span className="block truncate" title={v.camera_name}>{v.camera_name}</span>
               </TableCell>
               <TableCell className={`${cell} text-muted-foreground`}>{zoneLabel(v.zone)}</TableCell>
               <TableCell className={`${cell} text-right tabular-nums`}>{formatConfidence(v.confidence)}</TableCell>
               <TableCell className={`${cell} whitespace-nowrap tabular-nums text-muted-foreground`}>{formatTime(v.detected_at)}</TableCell>
-              <TableCell className={cell}><ViolationStatusBadge status={v.status} /></TableCell>
+              <TableCell className={cell}><ViolationStatusBadge status={v.status} className="h-6 px-2.5 text-[13px]" /></TableCell>
               <TableCell className={`${cell} text-right`}>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onOpen(v); }}>Харах</Button>
+                <Button variant="ghost" size="sm" className="h-8 px-2.5 text-[15px]" onClick={(e) => { e.stopPropagation(); onOpen(v); }}>Харах</Button>
               </TableCell>
             </TableRow>
           ))}

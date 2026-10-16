@@ -3,26 +3,26 @@ import { CAMERA_STATUS_LABEL, cameraTone, STATUS_LABEL, TONE_CLASS, VIOLATION_LA
 import { cn } from "@/lib/utils";
 import type { CameraStatus, ViolationStatus, ViolationType } from "@/types";
 
-export function CameraStatusBadge({ status }: { status: CameraStatus }) {
+export function CameraStatusBadge({ status, className }: { status: CameraStatus; className?: string }) {
   return (
-    <Badge variant="outline" className={cn("gap-1.5", TONE_CLASS[cameraTone(status)])}>
+    <Badge variant="outline" className={cn("gap-1.5", TONE_CLASS[cameraTone(status)], className)}>
       <span className="size-1.5 rounded-full bg-current" />
       {CAMERA_STATUS_LABEL[status]}
     </Badge>
   );
 }
 
-export function ViolationStatusBadge({ status }: { status: ViolationStatus }) {
+export function ViolationStatusBadge({ status, className }: { status: ViolationStatus; className?: string }) {
   return (
-    <Badge variant="outline" className={VIOLATION_STATUS_CLASS[status]}>
+    <Badge variant="outline" className={cn(VIOLATION_STATUS_CLASS[status], className)}>
       {STATUS_LABEL[status]}
     </Badge>
   );
 }
 
-export function ViolationTypeBadge({ type }: { type: ViolationType }) {
+export function ViolationTypeBadge({ type, className }: { type: ViolationType; className?: string }) {
   return (
-    <Badge variant="outline" className="border-danger/30 bg-danger/10 text-danger">
+    <Badge variant="outline" className={cn("border-danger/30 bg-danger/10 text-danger", className)}>
       {VIOLATION_LABEL[type]}
     </Badge>
   );

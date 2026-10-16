@@ -233,7 +233,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
               ) : (
                 <Loader2 className="size-4 animate-spin" />
               )}
-              <p className="text-sm text-foreground">{stageText}</p>
+              <p className="text-[15px] text-foreground">{stageText}</p>
             </div>
           </div>
         )}
@@ -246,15 +246,15 @@ export function CameraTile({ camera }: { camera: Camera }) {
         )}
       </div>
 
-      <div className="flex flex-col gap-3 p-4">
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3 p-5">
+        <div className="flex flex-col gap-2.5">
           <div className="min-w-0">
-            <div className="truncate text-sm font-medium text-foreground">{camera.name}</div>
-            <div className="truncate text-xs text-muted-foreground">{camera.zone ? zoneLabel(camera.zone) : "Бүсгүй"}</div>
+            <div className="truncate text-xl font-semibold leading-tight text-foreground">{camera.name}</div>
+            <div className="mt-1 truncate text-[15px] text-muted-foreground">{camera.zone ? zoneLabel(camera.zone) : "Бүсгүй"}</div>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <CameraStatusBadge status={camera.status} />
-            <Badge variant="outline" className={cn("gap-1.5", camera.ai_enabled && playing ? TONE_CLASS.good : TONE_CLASS.idle)}>
+            <CameraStatusBadge status={camera.status} className="h-6 px-2.5 text-[13px]" />
+            <Badge variant="outline" className={cn("h-6 gap-1.5 px-2.5 text-[13px]", camera.ai_enabled && playing ? TONE_CLASS.good : TONE_CLASS.idle)}>
               <span className="size-1.5 rounded-full bg-current" />
               {!camera.ai_enabled ? "AI унтраалттай" : playing ? "AI ажиллаж байна" : "AI хүлээгдэж байна"}
             </Badge>
@@ -262,12 +262,13 @@ export function CameraTile({ camera }: { camera: Camera }) {
         </div>
 
         {showToolbar && (
-          <div className="flex flex-wrap items-center gap-1 border-t border-border pt-3">
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
             {canManageCameras && (
               <Button
                 type="button"
                 variant="outline"
                 size={camera.enabled ? "icon" : "default"}
+                className={camera.enabled ? "size-9" : "h-9 px-3 text-[15px]"}
                 disabled={powering}
                 onClick={togglePower}
                 aria-label={camera.enabled ? "Камерыг унтраах" : "Камер асаах"}
@@ -282,6 +283,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
                 type="button"
                 variant="outline"
                 size="default"
+                className="h-9 px-3 text-[15px]"
                 onClick={publishing === "off" ? startPublish : stopPublish}
                 aria-label={publishing === "off" ? "Энэ төхөөрөмжөөс дамжуулах" : "Дамжуулалт зогсоох"}
                 title={publishing === "off" ? "Энэ төхөөрөмжөөс дамжуулах" : "Дамжуулалт зогсоох"}
@@ -295,6 +297,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
                 type="button"
                 variant="outline"
                 size="icon"
+                className="size-9"
                 onClick={reloadPlayback}
                 aria-label="Видеог дахин ачаалах"
                 title="Видеог дахин ачаалах"
@@ -302,12 +305,13 @@ export function CameraTile({ camera }: { camera: Camera }) {
                 <RefreshCw className="size-4" />
               </Button>
             )}
-            {canManageCameras && <span className="mx-0.5 h-4 w-px bg-border" />}
+            {canManageCameras && <span className="mx-0.5 h-5 w-px bg-border" />}
             {canManageCameras && (
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
+                className="size-9"
                 onClick={rotate}
                 title={`Эргүүлэх (дарах бүрт 90°, одоо ${rotation}°)`}
                 aria-label="Камерын харааг эргүүлэх"
@@ -320,6 +324,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
                 type="button"
                 variant="ghost"
                 size="icon"
+                className="size-9"
                 onClick={() => setEditingArea(true)}
                 title="Хориотой бүс зурах"
                 aria-label="Хориотой бүс зурах"
