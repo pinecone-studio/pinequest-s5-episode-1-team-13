@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 
 import { useAuth } from "@/components/providers/auth-provider";
 import { api } from "@/lib/api";
@@ -47,21 +47,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-bg relative isolate grid min-h-screen place-items-center overflow-hidden p-4">
-      <div aria-hidden className="login-grid pointer-events-none absolute inset-0 -z-10" />
-      <div aria-hidden className="login-scan pointer-events-none absolute inset-x-0 top-0 -z-10" />
-      {/* камерын харагдац шиг булангийн тэмдэг */}
-      {["left-6 top-6 border-l-2 border-t-2", "right-6 top-6 border-r-2 border-t-2", "bottom-6 left-6 border-b-2 border-l-2", "bottom-6 right-6 border-b-2 border-r-2"].map((c) => (
-        <span key={c} aria-hidden className={`pointer-events-none absolute size-10 border-primary/60 ${c}`} />
-      ))}
-      <div aria-hidden className="pointer-events-none absolute left-8 top-8 hidden items-center gap-2 pl-14 text-[11px] font-semibold tracking-[0.25em] text-red-400/80 sm:flex">
-        <span className="size-2 animate-pulse rounded-full bg-red-500" /> REC
-      </div>
-      <Camera aria-hidden className="pointer-events-none absolute -bottom-16 -right-12 -z-10 size-96 text-white/[0.03]" />
-      <Card className="w-full max-w-sm border-white/10 bg-card/80 shadow-2xl shadow-black/50 backdrop-blur">
+    <div className="grid min-h-screen place-items-center bg-background p-4">
+      <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
-          <ShieldAlert className="mb-2 size-8 text-emerald-400" />
-          <CardTitle className="tracking-[0.12em]">ҮЙЛДВЭРИЙН AI ХЯНАЛТ</CardTitle>
+          <ShieldAlert className="mb-2 size-8 text-foreground" />
+          <CardTitle>Үйлдвэрийн AI хяналт</CardTitle>
           <p className="text-xs text-muted-foreground">Удирдлагын төвд нэвтрэх</p>
         </CardHeader>
         <CardContent>
@@ -74,7 +64,7 @@ export default function LoginPage() {
               <Label htmlFor="password">Нууц үг</Label>
               <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
-            {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+            {error && <p role="alert" className="text-sm text-danger">{error}</p>}
             <Button type="submit" className="w-full" disabled={busy}>
               {busy ? "Нэвтэрч байна…" : "Нэвтрэх"}
             </Button>

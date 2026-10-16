@@ -45,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-60 shrink-0 flex-col border-r bg-card/40 md:flex">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-background md:flex">
         <div className="flex items-center gap-2 border-b px-5 py-4">
           <ShieldAlert className="size-5 text-primary" />
           <div className="leading-tight">
@@ -61,8 +61,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                  active && "bg-primary/10 font-medium text-primary",
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                  active && "bg-foreground font-medium text-background hover:bg-foreground hover:text-background",
                 )}
               >
                 <Icon className="size-4" />
@@ -95,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {sound ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
             </button>
             <span className="flex items-center gap-2 text-xs text-muted-foreground" title="Бодит цагийн холболт">
-              <span className={cn("size-2 rounded-full", connected ? "bg-emerald-400" : "bg-red-400 animate-pulse")} />
+              <span className={cn("size-2 rounded-full", connected ? "bg-success" : "bg-danger animate-pulse")} />
               {connected ? "Шууд" : "Дахин холбогдож байна…"}
             </span>
             <span className="hidden text-right leading-tight sm:block">

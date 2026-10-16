@@ -22,7 +22,7 @@ export function ViolationStatusBadge({ status }: { status: ViolationStatus }) {
 
 export function ViolationTypeBadge({ type }: { type: ViolationType }) {
   return (
-    <Badge variant="outline" className="border-red-500/30 bg-red-500/10 text-red-300">
+    <Badge variant="outline" className="border-danger/30 bg-danger/10 text-danger">
       {VIOLATION_LABEL[type]}
     </Badge>
   );
