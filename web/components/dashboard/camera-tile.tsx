@@ -6,22 +6,21 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/components/providers/auth-provider";
 
+import { useBrowserPublish } from "@/components/dashboard/browser-publisher";
 import { DetectionOverlay } from "@/components/dashboard/detection-overlay";
 import { RestrictedAreaLayer } from "@/components/dashboard/restricted-area-layer";
 import { CameraStatusBadge } from "@/components/status-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
-import { IN_APP_HINT, isInAppBrowser } from "@/lib/in-app-browser";
 import { CAMERA_STATUS_LABEL, cameraTone, TONE_CLASS, zoneLabel } from "@/lib/format";
 import { useElementSize } from "@/lib/use-element-size";
 import { cn } from "@/lib/utils";
-import { startWhep, startWhip } from "@/lib/webrtc";
+import { startWhep } from "@/lib/webrtc";
 import type { Camera } from "@/types";
 
 const RETRY_MS = 2000;
 const OFFLINE_RETRY_MS = 5000; // edge унтраастай (503): асахыг хүлээж байх зуур backend-ийг ачаалахгүй
-const PUBLISH_RETRY_MS = 3000;
 
 /** Видеог цагийн зүүнд `rotation`° эргүүлж талбайд багтаана (90/270°-д өргөн, өндөр солигдоно). */
 function videoStyle(size: { w: number; h: number }, rotation: number): React.CSSProperties {
@@ -54,85 +53,14 @@ export function CameraTile({ camera }: { camera: Camera }) {
   const onAiActivity = useCallback((state: "waiting" | "processing" | "error") => {
     setAiActivity((prev) => (prev === state ? prev : state));
   }, []);
-
-  // BROWSER камер: энэ browser-ийн камерыг WHIP-ээр MediaMTX руу дамжуулна (tile unmount болоход зогсоно).
-  // Тасарвал (сүлжээ, backend redeploy) зогсоох хүртэл автоматаар дахин холбогдоно.
-  const [publishing, setPublishing] = useState<"off" | "starting" | "on">("off");
-  const pub = useRef<{ wanted: boolean; stream: MediaStream | null; pc: RTCPeerConnection | null; timer?: ReturnType<typeof setTimeout> }>(
-    { wanted: false, stream: null, pc: null },
-  );
-
-  const stopPublish = useCallback(() => {
-    const p = pub.current;
-    p.wanted = false;
-    clearTimeout(p.timer);
-    p.pc?.close();
-    p.pc = null;
-    p.stream?.getTracks().forEach((t) => t.stop());
-    p.stream = null;
-    setPublishing("off");
+  // Видео зогсоход AI-ийн төлөв ч "хүлээгдэж байна" болно (дахин тоглоход overlay шинээр мэдэгдэнэ)
+  const stopPlaying = useCallback(() => {
+    setPlaying(false);
+    setAiActivity("waiting");
   }, []);
 
-  useEffect(() => stopPublish, [stopPublish]);
-
-  async function connectPublisher(first: boolean) {
-    const p = pub.current;
-    if (!p.wanted || !p.stream) return;
-    const retry = () => {
-      if (!p.wanted) return;
-      setPublishing("starting");
-      clearTimeout(p.timer);
-      p.timer = setTimeout(() => void connectPublisher(false), PUBLISH_RETRY_MS);
-    };
-    try {
-      const access = await api.publish(camera.id);
-      if (!p.wanted) return;
-      const pc = await startWhip(
-        access.whip_url,
-        access.token,
-        p.stream,
-        () => {
-          if (p.pc !== pc) return; // хуучин (солигдсон) session-ий event — одоогийнхыг хаахгүй
-          pc.close();
-          p.pc = null;
-          retry();
-        },
-        access.ice_servers,
-      );
-      if (!p.wanted) return pc.close();
-      p.pc = pc;
-      setPublishing("on");
-      if (first) toast.success("Энэ төхөөрөмжийн камерыг дамжуулж байна");
-    } catch (err) {
-      if (err instanceof ApiError && err.status >= 400 && err.status < 500) { // эрхгүй/олдсонгүй — дахин оролдох утгагүй
-        stopPublish();
-        toast.error(err.message);
-        return;
-      }
-      if (first) {
-        const reason = err instanceof ApiError && err.status === 503 ? err.message : undefined;
-        toast.error("Холбогдож чадсангүй — дахин оролдож байна…", { description: reason });
-      }
-      retry();
-    }
-  }
-
-  async function startPublish() {
-    const p = pub.current;
-    if (p.wanted) return; // давхар дарахаас хамгаална
-    p.wanted = true;
-    setPublishing("starting");
-    if (isInAppBrowser(navigator.userAgent)) toast.warning("Энэ browser камер дамжуулахгүй байж магадгүй", { description: IN_APP_HINT });
-    try {
-      p.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-    } catch (err) {
-      stopPublish();
-      const denied = err instanceof DOMException && err.name === "NotAllowedError";
-      toast.error(denied ? "Камерын зөвшөөрөл олгогдсонгүй (browser-ийн хаягийн мөрөнд зөвшөөрнө үү)" : "Камерыг нээж чадсангүй");
-      return;
-    }
-    await connectPublisher(true);
-  }
+  // BROWSER камер: энэ browser-ийн камерыг дамжуулна. Tile-аас тусдаа (browser-publisher.tsx): өөр камер сонгоход тасрахгүй.
+  const { publishing, startPublish, stopPublish } = useBrowserPublish(camera.id);
 
   const [powering, setPowering] = useState(false);
   async function togglePower() {
@@ -157,7 +85,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
     const retry = (wait = RETRY_MS) => {
       pc?.close();
       pc = null;
-      setPlaying(false);
+      stopPlaying();
       if (!cancelled) timer = setTimeout(connect, wait);
     };
     const connect = async () => {
@@ -183,17 +111,13 @@ export function CameraTile({ camera }: { camera: Camera }) {
       pc?.close();
       video.srcObject = null;
     };
-  }, [live, video, camera.id, playbackAttempt]);
+  }, [live, video, camera.id, playbackAttempt, stopPlaying]);
 
   function reloadPlayback() {
-    setPlaying(false);
+    stopPlaying();
     setVideoProblem(null);
     setPlaybackAttempt((n) => n + 1);
   }
-
-  useEffect(() => {
-    if (!playing) setAiActivity("waiting");
-  }, [playing]);
 
   const stageText = !camera.enabled
     ? "Камер унтраалттай"
@@ -215,7 +139,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
             ref={setVideo}
             autoPlay muted playsInline
             onPlaying={() => setPlaying(true)}
-            onEmptied={() => setPlaying(false)}
+            onEmptied={stopPlaying}
             style={videoStyle(stageSize, rotation)}
             className="absolute bg-black object-contain"
           />
