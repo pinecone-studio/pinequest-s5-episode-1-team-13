@@ -126,7 +126,6 @@ export function CameraTile({ camera }: { camera: Camera }) {
       : camera.status === "ONLINE" || camera.status === "STREAMING"
         ? "Видео хүлээж байна…"
         : CAMERA_STATUS_LABEL[camera.status];
-  const showToolbar = canManageCameras && playing && !editingArea;
   const aiTone = !camera.ai_enabled ? "idle" : !playing || aiActivity === "waiting" ? "warn" : aiActivity === "error" ? "bad" : "good";
   const aiLabel = !camera.ai_enabled ? "AI идэвхгүй" : !playing || aiActivity === "waiting" ? "AI хүлээгдэж байна" : aiActivity === "error" ? "AI алдаа" : "AI ажиллаж байна";
   const cornerBtn = "grid size-9 place-items-center rounded-lg bg-black/70 text-white shadow-sm transition-colors hover:bg-black/85 disabled:opacity-60";
@@ -201,44 +200,43 @@ export function CameraTile({ camera }: { camera: Camera }) {
 
       <div className="flex flex-col gap-3 p-5">
         <div className="min-w-0">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 truncate text-xl font-semibold leading-tight text-foreground">{camera.name}</div>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <div className="min-w-0 flex-1 truncate text-xl font-semibold leading-tight text-foreground">{camera.name}</div>
             {canManageCameras && (
-              <Button
-                type="button"
-                variant="outline"
-                size="default"
-                className="h-9 shrink-0 px-3 text-[15px]"
-                disabled={powering}
-                onClick={togglePower}
-                aria-label={camera.enabled ? "Камерыг унтраах" : "Камер асаах"}
-                title={camera.enabled ? "Камерыг унтраах" : "Камер асаах"}
-              >
-                {powering ? <Loader2 className="size-4 animate-spin" /> : <Power className="size-4" />}
-                {camera.enabled ? "Унтраах" : "Асаах"}
-              </Button>
+              <div className="flex shrink-0 items-center gap-2">
+                {!editingArea && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="default"
+                    className="h-9 px-3 text-[15px]"
+                    disabled={!playing}
+                    onClick={() => setEditingArea(true)}
+                    title={playing ? "Хориотой бүс зурах" : "Видео гарсны дараа бүс зурна"}
+                    aria-label="Хориотой бүс зурах"
+                  >
+                    <ShieldBan className="size-4" />
+                    Хориотой бүс зурах
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="default"
+                  className="h-9 px-3 text-[15px]"
+                  disabled={powering}
+                  onClick={togglePower}
+                  aria-label={camera.enabled ? "Камерыг унтраах" : "Камер асаах"}
+                  title={camera.enabled ? "Камерыг унтраах" : "Камер асаах"}
+                >
+                  {powering ? <Loader2 className="size-4 animate-spin" /> : <Power className="size-4" />}
+                  {camera.enabled ? "Унтраах" : "Асаах"}
+                </Button>
+              </div>
             )}
           </div>
           <div className="mt-1 truncate text-[15px] text-muted-foreground">{camera.zone ? zoneLabel(camera.zone) : "Бүсгүй"}</div>
         </div>
-
-        {showToolbar && (
-          <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
-            {canManageCameras && playing && !editingArea && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-9"
-                onClick={() => setEditingArea(true)}
-                title="Хориотой бүс зурах"
-                aria-label="Хориотой бүс зурах"
-              >
-                <ShieldBan className="size-4" />
-              </Button>
-            )}
-          </div>
-        )}
       </div>
     </article>
   );
