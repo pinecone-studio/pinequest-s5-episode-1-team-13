@@ -72,30 +72,30 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="min-w-0 space-y-6">
-      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+    <div className="min-w-0 space-y-8">
+      {error && <p role="alert" className="text-[15px] text-danger">{error}</p>}
       <StatCards stats={stats} />
 
       <section>
-        <h2 className="mb-4 text-sm font-medium text-foreground">Камерын шууд хяналт</h2>
+        <h2 className="mb-5 text-[22px] font-semibold leading-tight tracking-tight text-foreground">Камерын шууд хяналт</h2>
         {cameras.length === 0 ? (
           <div className="rounded-3xl border border-border bg-card px-6 py-10 text-center">
             <VideoOff className="mx-auto size-4 text-muted-foreground" />
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-[15px] text-muted-foreground">
               Камер байхгүй байна. Хяналт эхлэхийн тулд <Link href="/cameras" className="text-foreground underline">камер нэмнэ үү</Link>.
             </p>
           </div>
         ) : (
-          <div className={cameras.length === 1 ? "grid max-w-3xl grid-cols-1 gap-4" : cameras.length === 2 ? "grid grid-cols-1 gap-4 lg:grid-cols-2" : "grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3"}>
+          <div className={cameras.length === 1 ? "grid max-w-3xl grid-cols-1 gap-5" : cameras.length === 2 ? "grid grid-cols-1 gap-5 lg:grid-cols-2" : "grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3"}>
             {cameras.map((camera) => <CameraTile key={camera.id} camera={camera} />)}
           </div>
         )}
       </section>
 
       <section>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-medium text-foreground">Сүүлийн зөрчлүүд</h2>
-          <Link href="/violations" className="text-sm text-muted-foreground hover:text-foreground">Бүгдийг харах</Link>
+        <div className="mb-5 flex items-baseline justify-between gap-3">
+          <h2 className="text-[22px] font-semibold leading-tight tracking-tight text-foreground">Сүүлийн зөрчлүүд</h2>
+          <Link href="/violations" className="text-[15px] text-muted-foreground hover:text-foreground">Бүгдийг харах</Link>
         </div>
         <ViolationTable items={recent} onOpen={setSelected} empty="Зөрчил илрээгүй байна" />
       </section>

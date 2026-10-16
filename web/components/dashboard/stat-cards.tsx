@@ -17,16 +17,16 @@ function Stat({
   alert?: boolean;
 }) {
   return (
-    <div className="flex h-full min-h-36 flex-col rounded-xl border border-border bg-card p-4 shadow-surface transition-colors duration-150 hover:bg-muted">
+    <div className="flex h-full flex-col rounded-2xl bg-[#111111] p-5 text-white shadow-surface transition-colors duration-150 hover:bg-[#1a1a1a]">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          {alert && <span className="size-1.5 rounded-full bg-danger" />}
+        <div className="flex items-center gap-2 text-[15px] font-medium leading-none text-white">
+          {alert && <span className="size-1.5 rounded-full bg-[#f87171]" />}
           {label}
         </div>
-        <Icon className="size-4 shrink-0 text-muted-foreground" />
+        <Icon className="size-6 shrink-0 text-white/55" />
       </div>
-      <div className="mt-4 text-3xl font-semibold leading-none tracking-tight text-foreground">{value}</div>
-      <div className="mt-auto pt-3 text-xs text-muted-foreground">{hint}</div>
+      <div className="mt-3 flex min-h-10 items-center text-[40px] font-semibold leading-none tracking-tight text-white">{value}</div>
+      <div className="mt-2 text-[15px] leading-snug text-white/45">{hint}</div>
     </div>
   );
 }
@@ -40,14 +40,14 @@ export function StatCards({ stats }: { stats: DashboardStats | null }) {
       <Stat
         icon={Camera}
         label="Камерууд"
-        value={stats ? <>{stats.cameras_online}<span className="text-xl font-medium text-muted-foreground"> / {stats.cameras_total}</span></> : "—"}
+        value={stats ? <span className="inline-flex items-baseline gap-1.5">{stats.cameras_online}<span className="text-2xl font-medium text-white/40">/ {stats.cameras_total}</span></span> : "—"}
         hint="холбогдсон / нийт"
       />
       <Stat
         icon={TriangleAlert}
         label="Зөрчлүүд"
         alert={stats != null && open > 0}
-        value={stats ? stats.violations_open : "—"}
+        value={stats ? <span className={open > 0 ? "text-[#f87171]" : undefined}>{stats.violations_open}</span> : "—"}
         hint={stats ? `нээлттэй · өнөөдөр ${stats.violations_today} · нийт ${stats.violations_total}` : ""}
       />
       <Stat
@@ -55,8 +55,8 @@ export function StatCards({ stats }: { stats: DashboardStats | null }) {
         label="AI төлөв"
         value={
           stats ? (
-            <span className="inline-flex items-center gap-2 text-lg font-medium">
-              <span className={cn("size-1.5 rounded-full", ai ? "bg-success" : "bg-danger")} />
+            <span className={cn("inline-flex items-center gap-2 text-[22px] font-semibold", ai ? "text-[#4ade80]" : "text-[#f87171]")}>
+              <span className={cn("size-2 rounded-full", ai ? "bg-[#4ade80]" : "bg-[#f87171]")} />
               {ai ? "Ажиллаж байна" : "Салсан"}
             </span>
           ) : (

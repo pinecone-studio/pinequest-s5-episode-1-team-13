@@ -47,6 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const nav = NAV.filter((item) => !item.adminOnly || can("ADMIN"));
   const title = nav.find((item) => isActive(pathname, item.href))?.label ?? "Хяналтын самбар";
+  const overview = pathname === "/";
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -87,8 +88,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col p-5 md:p-6">
-        <header className="mb-5 flex items-center gap-2 max-sm:flex-wrap max-sm:gap-y-2 sm:gap-4">
+      <div className={cn("flex min-w-0 flex-1 flex-col", overview ? "px-5 py-6 md:px-8 md:py-7" : "p-5 md:p-6")}>
+        <header className={cn("flex items-center gap-2 max-sm:flex-wrap max-sm:gap-y-2 sm:gap-4", overview ? "mb-8" : "mb-5")}>
           <div className="order-1 flex items-center gap-1 md:hidden">
             {nav.map(({ href, icon: Icon, label }) => {
               const active = isActive(pathname, href);
