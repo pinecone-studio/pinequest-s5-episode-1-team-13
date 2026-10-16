@@ -95,7 +95,13 @@ export default function DashboardPage() {
           <h2 className="text-[22px] font-semibold leading-tight tracking-tight text-foreground">Сүүлийн зөрчлүүд</h2>
           <Link href="/violations" className="text-[15px] text-muted-foreground hover:text-foreground">Бүгдийг харах</Link>
         </div>
-        <ViolationTable items={recent} onOpen={setSelected} empty="Зөрчил илрээгүй байна" />
+        <ViolationTable
+          items={recent}
+          onOpen={setSelected}
+          onChanged={(v) => { setSelected((cur) => (cur?.id === v.id ? v : cur)); setRecent((prev) => prev.map((x) => (x.id === v.id ? v : x))); refreshStats(); }}
+          onDeleted={(id) => { setSelected((cur) => (cur?.id === id ? null : cur)); setRecent((prev) => prev.filter((x) => x.id !== id)); refreshStats(); }}
+          empty="Зөрчил илрээгүй байна"
+        />
       </section>
 
       <ViolationDetailDialog

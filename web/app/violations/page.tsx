@@ -79,7 +79,12 @@ export default function ViolationsPage() {
       </div>
 
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-      <ViolationTable items={items} onOpen={setSelected} />
+      <ViolationTable
+        items={items}
+        onOpen={setSelected}
+        onChanged={(v) => { setSelected((cur) => (cur?.id === v.id ? v : cur)); setItems((prev) => prev.map((x) => (x.id === v.id ? v : x))); }}
+        onDeleted={(id) => { setSelected((cur) => (cur?.id === id ? null : cur)); setItems((prev) => prev.filter((x) => x.id !== id)); load(); }}
+      />
 
       <div className="flex items-center justify-end gap-2">
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Өмнөх</Button>
