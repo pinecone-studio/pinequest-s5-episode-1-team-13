@@ -55,7 +55,7 @@ def demo_login(response: Response, db: Session = Depends(get_db)):
         user = User(email=email, full_name="Demo", password_hash=hash_password(secrets.token_urlsafe(32)), role=UserRole.HUB_EMPLOYEE)
         db.add(user)
         db.flush()
-    if user.role is not UserRole.HUB_EMPLOYEE or not user.is_active:  # demo-гоор админ эрх хэзээ ч өгөхгүй
+    if user.role is not UserRole.HUB_EMPLOYEE or not user.is_active:  # бодит админы бүртгэлээр demo-гоор хэзээ ч нэвтрэхгүй (DEMO_USER_ROLE-оос үл хамаарна)
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Demo нэвтрэлт идэвхгүй байна")
 
     _start_session(user, response, db)

@@ -13,7 +13,7 @@ export interface User {
   is_active: boolean;
   created_at: string;
   last_login_at: string | null;
-  is_demo: boolean; // demo нэвтрэлт — зөвхөн өөрийн нэмсэн камерыг удирдана
+  is_demo: boolean; // demo нэвтрэлт — зөвхөн өөрийн нэмсэн камерыг удирдана (backend DEMO_USER_ROLE=ADMIN үед role=ADMIN ирж бүгдийг)
 }
 
 /** Нууц үг, RTSP URL-ийг backend хэзээ ч буцаадаггүй. */

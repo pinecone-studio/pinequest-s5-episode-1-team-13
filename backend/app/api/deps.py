@@ -35,9 +35,14 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     return user
 
 
+def effective_role(user: User) -> UserRole:
+    """DEMO_USER_ROLE=ADMIN үед demo хэрэглэгч админ эрхтэй (DB-д HUB_EMPLOYEE хэвээр)."""
+    return UserRole.ADMIN if get_settings().is_demo_admin(user.email) else user.role
+
+
 def require_roles(*roles: UserRole):
     def checker(user: User = Depends(get_current_user)) -> User:
-        if user.role not in roles:
+        if effective_role(user) not in roles:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Insufficient permissions")
         return user
 
@@ -50,7 +55,7 @@ require_staff = require_roles(UserRole.ADMIN, UserRole.HUB_EMPLOYEE)  # violatio
 
 def require_camera_manager(user: User = Depends(get_current_user)) -> User:
     """ADMIN эсвэл demo хэрэглэгч (demo нь зөвхөн өөрийн нэмсэн камерыг өөрчилнө — cameras.py)."""
-    if user.role is UserRole.ADMIN or get_settings().is_demo_email(user.email):
+    if effective_role(user) is UserRole.ADMIN or get_settings().is_demo_email(user.email):
         return user
     raise HTTPException(status.HTTP_403_FORBIDDEN, "Insufficient permissions")
 

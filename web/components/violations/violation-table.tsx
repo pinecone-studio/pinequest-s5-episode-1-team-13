@@ -62,18 +62,13 @@ export function ViolationTable({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const columns = staff ? 9 : 8;
 
-  useEffect(() => {
+  // Жагсаалтаас гарсан зөрчлийг сонголтоос хасна: items солигдох үед render дотор (effect-гүй, React-ийн зөвлөсөн хэлбэр)
+  const [prevItems, setPrevItems] = useState(items);
+  if (items !== prevItems) {
+    setPrevItems(items);
     const ids = new Set(items.map((v) => v.id));
-    setSelected((prev) => {
-      let changed = false;
-      const next = new Set<string>();
-      for (const id of prev) {
-        if (ids.has(id)) next.add(id);
-        else changed = true;
-      }
-      return changed ? next : prev;
-    });
-  }, [items]);
+    if ([...selected].some((id) => !ids.has(id))) setSelected(new Set([...selected].filter((id) => ids.has(id))));
+  }
 
   const chosen = items.filter((v) => selected.has(v.id));
   const openOnes = chosen.filter((v) => v.status === "OPEN");
