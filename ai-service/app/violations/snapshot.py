@@ -6,10 +6,10 @@ import cv2
 import numpy as np
 
 from app.detection.types import PersonResult
-from app.violations.rules import RESTRICTED_AREA
+from app.violations.rules import PERSON_DOWN, RESTRICTED_AREA
 
 RED, WHITE = (40, 40, 230), (255, 255, 255)
-LABELS = {"NO_HELMET": "NO HELMET", "NO_WORK_UNIFORM": "NO UNIFORM", RESTRICTED_AREA: "RESTRICTED AREA"}
+LABELS = {"NO_HELMET": "NO HELMET", "NO_WORK_UNIFORM": "NO UNIFORM", RESTRICTED_AREA: "RESTRICTED AREA", PERSON_DOWN: "PERSON DOWN"}
 
 
 def make_snapshot(frame: np.ndarray, person: PersonResult, vtype: str, quality: int = 85) -> bytes:

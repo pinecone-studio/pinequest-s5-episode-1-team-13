@@ -12,6 +12,7 @@ from app.cameras.quality import measure
 from app.dataset.collector import DatasetCollector
 from app.cameras.models import CameraInfo
 from app.detection.areas import RestrictedAreaConfig, mark
+from app.detection.fall import mark_down
 from app.detection.motion import MotionGate
 from app.detection.ppe import analyse
 from app.detection.smoothing import PersonSmoother
@@ -37,8 +38,10 @@ class CameraAI:
         no_conf: float = 0.0,
         smooth_window: int = 1,
         areas: RestrictedAreaConfig | None = None,
+        fall_ratio: float = 0.0,
     ) -> None:
         self._areas = areas
+        self._fall_ratio = fall_ratio
         self._no_conf = no_conf
         self._smoother = PersonSmoother(smooth_window) if smooth_window > 1 else None
         self._motion = motion
@@ -75,6 +78,7 @@ class CameraAI:
             people = self._smoother.apply(people)  # majority of the last few results per person: no flicker
         if self._areas is not None:
             mark(people, self._areas.get(camera.id), width, height)  # feet inside a restricted area = violation
+        mark_down(people, self._fall_ratio, height)  # person lying on the floor = violation
         if people or not self._sent_empty:
             self._client.detections(camera.id, [p.to_payload(width, height) for p in people])
         self._sent_empty = not people
