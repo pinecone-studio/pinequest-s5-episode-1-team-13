@@ -220,6 +220,14 @@ async def disconnect_camera(camera_id: uuid.UUID, db: Session = Depends(get_db),
     return out
 
 
+def _media_url_or_503(db: Session) -> str:
+    url = camera_service.public_media_url(db)
+    if camera_service.media_server_offline(url):
+        # Edge (MediaMTX + tunnel) сүүлийн 3 минутад хаягаа мэдэгдээгүй: browser-т хүрэхгүй localhost хаяг өгөхгүй
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Video server offline")
+    return url
+
+
 @router.get("/{camera_id}/webrtc")
 def webrtc_access(camera_id: uuid.UUID, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     """Шууд видеоны WebRTC (WHEP) хаяг + 2 минутын токен. Raw RTSP URL browser-д огт очихгүй."""
@@ -227,7 +235,7 @@ def webrtc_access(camera_id: uuid.UUID, db: Session = Depends(get_db), _: User =
     path = camera_service.stream_path(camera.id)
     settings = get_settings()
     return {
-        "whep_url": f"{camera_service.public_media_url(db)}/{path}/whep",
+        "whep_url": f"{_media_url_or_503(db)}/{path}/whep",
         "token": create_stream_token(path),
         "expires_in": settings.stream_token_expire_seconds,
         "ice_servers": camera_service.ice_servers(),
@@ -243,7 +251,7 @@ def publish_access(camera_id: uuid.UUID, db: Session = Depends(get_db), user: Us
     path = camera_service.stream_path(camera.id)
     settings = get_settings()
     return {
-        "whip_url": f"{camera_service.public_media_url(db)}/{path}/whip",
+        "whip_url": f"{_media_url_or_503(db)}/{path}/whip",
         "token": create_stream_token(path, "publish"),
         "expires_in": settings.stream_token_expire_seconds,
         "ice_servers": camera_service.ice_servers(),

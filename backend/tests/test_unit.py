@@ -315,3 +315,29 @@ def test_generic_rtsp_url_matches_ai_service():
         "rtsp://a%20b:p%40ss@10.0.0.5:8080/h264.sdp?x=1"
     )
     assert build_rtsp_url("u", "p", "10.0.0.5", 8554, 1, 0, "GENERIC_RTSP") == "rtsp://u:p@10.0.0.5:8554/"
+
+
+def test_cloud_backend_reports_offline_edge_instead_of_localhost(monkeypatch):
+    svc = _settings(monkeypatch, probe=False)  # cloud (Railway)
+    assert svc.media_server_offline("http://localhost:8889")
+    assert svc.media_server_offline("http://127.0.0.1:8889")
+    assert not svc.media_server_offline("https://abc.trycloudflare.com")
+    assert not svc.media_server_offline("https://media.example.com")
+    svc = _settings(monkeypatch, probe=True)  # локал: localhost зөв
+    assert not svc.media_server_offline("http://localhost:8889")
+
+
+def test_webrtc_endpoint_returns_503_when_edge_is_offline(monkeypatch):
+    import time
+
+    from fastapi import HTTPException
+
+    from app.api import cameras
+
+    _settings(monkeypatch, probe=False)
+    with pytest.raises(HTTPException) as exc:
+        cameras._media_url_or_503(_db_with(None))
+    assert exc.value.status_code == 503 and exc.value.detail == "Video server offline"
+    assert cameras._media_url_or_503(_db_with({"url": "https://abc.trycloudflare.com", "at": time.time()})) == (
+        "https://abc.trycloudflare.com"
+    )

@@ -16,6 +16,7 @@ import { startWhep, startWhip } from "@/lib/webrtc";
 import type { Camera } from "@/types";
 
 const RETRY_MS = 2000;
+const OFFLINE_RETRY_MS = 5000; // edge унтраастай (503): асахыг хүлээж байх зуур backend-ийг ачаалахгүй
 const PUBLISH_RETRY_MS = 3000;
 
 /** Видеог цагийн зүүнд `rotation`° эргүүлж талбайд багтаана (90/270°-д өргөн, өндөр солигдоно). */
@@ -41,6 +42,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
   const stageSize = useElementSize(stageRef);
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [videoProblem, setVideoProblem] = useState<string | null>(null); // жишээ: edge унтраастай
   const { canManageCameras } = useAuth();
   const [editingArea, setEditingArea] = useState(false);
 
@@ -106,7 +108,10 @@ export function CameraTile({ camera }: { camera: Camera }) {
         toast.error(err.message);
         return;
       }
-      if (first) toast.error("Холбогдож чадсангүй — дахин оролдож байна…");
+      if (first) {
+        const reason = err instanceof ApiError && err.status === 503 ? err.message : undefined;
+        toast.error("Холбогдож чадсангүй — дахин оролдож байна…", { description: reason });
+      }
       retry();
     }
   }
@@ -147,20 +152,25 @@ export function CameraTile({ camera }: { camera: Camera }) {
     let pc: RTCPeerConnection | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
-    const retry = () => {
+    const retry = (wait = RETRY_MS) => {
       pc?.close();
       pc = null;
       setPlaying(false);
-      if (!cancelled) timer = setTimeout(connect, RETRY_MS);
+      if (!cancelled) timer = setTimeout(connect, wait);
     };
     const connect = async () => {
       try {
         const access = await api.webrtc(camera.id);
         if (cancelled) return;
-        pc = await startWhep(access.whep_url, access.token, (stream) => { video.srcObject = stream; }, retry, access.ice_servers);
+        setVideoProblem(null);
+        pc = await startWhep(access.whep_url, access.token, (stream) => { video.srcObject = stream; }, () => retry(), access.ice_servers);
         if (cancelled) pc.close();
       } catch (err) {
         if (err instanceof ApiError && err.status === 404) return; // камер устгагдсан — дахин асуухгүй
+        if (err instanceof ApiError && err.status === 503) {
+          setVideoProblem(err.message); // edge унтраастай: шалтгааныг харуулаад асахыг хүлээнэ
+          return retry(OFFLINE_RETRY_MS);
+        }
         retry(); // MediaMTX-д видео хараахан бэлэн биш / түр тасарсан
       }
     };
@@ -199,9 +209,9 @@ export function CameraTile({ camera }: { camera: Camera }) {
 
         {!playing && (
           <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-zinc-900 to-zinc-950 text-muted-foreground">
-            <div className="flex flex-col items-center gap-3 text-sm">
+            <div className="flex max-w-[85%] flex-col items-center gap-3 text-center text-sm">
               <VideoOff className="size-10" />
-              {camera.enabled ? (live ? "Видео хүлээж байна…" : CAMERA_STATUS_LABEL[camera.status]) : "Камер унтраалттай"}
+              {camera.enabled ? (live ? (videoProblem ?? "Видео хүлээж байна…") : CAMERA_STATUS_LABEL[camera.status]) : "Камер унтраалттай"}
               {!camera.enabled && canManageCameras && (
                 <button type="button" disabled={powering} onClick={togglePower}
                   className="mt-1 flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60">

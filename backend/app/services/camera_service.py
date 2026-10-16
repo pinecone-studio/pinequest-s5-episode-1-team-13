@@ -104,6 +104,17 @@ def public_media_url(db, now: float | None = None) -> str:
     return settings.mediamtx_public_url.rstrip("/")
 
 
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+
+
+def media_server_offline(url: str) -> bool:
+    """Cloud backend (CAMERA_PROBE_ENABLED=false) бөгөөд edge-ийн шинэ хаяг алга -> MEDIAMTX_PUBLIC_URL нь ихэвчлэн
+    localhost: хэрэглэгчийн browser хэзээ ч хүрэхгүй. Тэр үед буруу хаяг өгөхийн оронд "edge унтарсан" гэж хэлнэ."""
+    if get_settings().camera_probe_enabled:
+        return False  # локал горим: localhost зөв
+    return (urlsplit(url).hostname or "").lower() in _LOCAL_HOSTS
+
+
 _STUN_SCHEMES = ("stun:", "stuns:")
 _TURN_SCHEMES = ("turn:", "turns:")
 TURN_USER_SUFFIX = "pinequest"
