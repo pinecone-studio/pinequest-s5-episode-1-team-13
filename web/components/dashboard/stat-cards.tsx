@@ -3,37 +3,66 @@ import { Activity, Camera, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DashboardStats } from "@/types";
 
-function Stat({ icon: Icon, label, value, hint, accent }: { icon: typeof Camera; label: string; value: React.ReactNode; hint: string; accent: string }) {
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  alert,
+}: {
+  icon: typeof Camera;
+  label: string;
+  value: React.ReactNode;
+  hint: string;
+  alert?: boolean;
+}) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border bg-card p-5">
-      <span className={cn("absolute inset-y-0 left-0 w-1.5", accent)} />
-      <div className="flex items-start justify-between">
-        <div className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground">{label}</div>
-        <Icon className="size-5 text-muted-foreground" />
+    <div className="flex h-full min-h-36 flex-col rounded-lg border border-border bg-card p-5 transition-colors duration-150 hover:border-foreground/20">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          {alert && <span className="size-1.5 rounded-full bg-danger" />}
+          {label}
+        </div>
+        <Icon className="size-4 shrink-0 text-muted-foreground" />
       </div>
-      <div className="mt-3 text-4xl font-bold leading-none tracking-tight">{value}</div>
-      <div className="mt-2 text-sm text-muted-foreground">{hint}</div>
+      <div className="mt-4 text-3xl font-semibold leading-none tracking-tight text-foreground">{value}</div>
+      <div className="mt-auto pt-3 text-xs text-muted-foreground">{hint}</div>
     </div>
   );
 }
 
 export function StatCards({ stats }: { stats: DashboardStats | null }) {
   const ai = stats?.ai_status === "ONLINE";
+  const open = stats?.violations_open ?? 0;
+
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       <Stat
-        icon={Camera} label="КАМЕРУУД" accent="bg-primary"
-        value={stats ? <>{stats.cameras_online}<span className="text-2xl text-muted-foreground"> / {stats.cameras_total}</span></> : "—"}
+        icon={Camera}
+        label="Камерууд"
+        value={stats ? <>{stats.cameras_online}<span className="text-xl font-medium text-muted-foreground"> / {stats.cameras_total}</span></> : "—"}
         hint="холбогдсон / нийт"
       />
       <Stat
-        icon={TriangleAlert} label="ЗӨРЧЛҮҮД" accent={stats && stats.violations_open > 0 ? "bg-red-500" : "bg-emerald-500"}
-        value={<span className={stats && stats.violations_open > 0 ? "text-red-400" : undefined}>{stats ? stats.violations_open : "—"}</span>}
+        icon={TriangleAlert}
+        label="Зөрчлүүд"
+        alert={stats != null && open > 0}
+        value={stats ? stats.violations_open : "—"}
         hint={stats ? `нээлттэй · өнөөдөр ${stats.violations_today} · нийт ${stats.violations_total}` : ""}
       />
       <Stat
-        icon={Activity} label="AI ТӨЛӨВ" accent={ai ? "bg-emerald-500" : "bg-zinc-600"}
-        value={<span className={ai ? "text-emerald-400" : stats ? "text-red-400" : undefined}>{stats ? (ai ? "АЖИЛЛАЖ БАЙНА" : "САЛСАН") : "—"}</span>}
+        icon={Activity}
+        label="AI төлөв"
+        value={
+          stats ? (
+            <span className="inline-flex items-center gap-2 text-lg font-medium">
+              <span className={cn("size-1.5 rounded-full", ai ? "bg-success" : "bg-danger")} />
+              {ai ? "Ажиллаж байна" : "Салсан"}
+            </span>
+          ) : (
+            "—"
+          )
+        }
         hint="AI үйлчилгээний дохио"
       />
     </div>
