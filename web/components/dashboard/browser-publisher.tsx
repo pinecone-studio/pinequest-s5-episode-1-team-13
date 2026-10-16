@@ -21,13 +21,13 @@ type Publisher = { wanted: boolean; stream: MediaStream | null; pc: RTCPeerConne
 class BrowserPublishers {
   private publishers = new Map<string, Publisher>();
 
-  constructor(private onChange: (cameraId: string, state: PublishState) => void) {}
+  constructor(private onChange: (cameraId: string, state: PublishState, stream: MediaStream | null) => void) {}
 
   async start(cameraId: string) {
     if (this.publishers.get(cameraId)?.wanted) return; // давхар дарахаас хамгаална
     const p: Publisher = { wanted: true, stream: null, pc: null };
     this.publishers.set(cameraId, p);
-    this.onChange(cameraId, "starting");
+    this.onChange(cameraId, "starting", null);
     if (isInAppBrowser(navigator.userAgent)) toast.warning("Энэ browser камер дамжуулахгүй байж магадгүй", { description: IN_APP_HINT });
     try {
       p.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
@@ -38,6 +38,7 @@ class BrowserPublishers {
       return;
     }
     if (!p.wanted) return this.release(p); // камерын зөвшөөрөл хүлээх зуур зогсоосон
+    this.onChange(cameraId, "starting", p.stream);
     await this.connect(cameraId, p, true);
   }
 
@@ -47,7 +48,7 @@ class BrowserPublishers {
       this.release(p);
       this.publishers.delete(cameraId);
     }
-    this.onChange(cameraId, "off");
+    this.onChange(cameraId, "off", null);
   }
 
   stopAll() {
@@ -67,7 +68,7 @@ class BrowserPublishers {
     if (!p.wanted || !p.stream) return;
     const retry = () => {
       if (!p.wanted) return;
-      this.onChange(cameraId, "starting");
+      this.onChange(cameraId, "starting", p.stream);
       clearTimeout(p.timer);
       p.timer = setTimeout(() => void this.connect(cameraId, p, false), PUBLISH_RETRY_MS);
     };
@@ -88,7 +89,7 @@ class BrowserPublishers {
       );
       if (!p.wanted) return pc.close();
       p.pc = pc;
-      this.onChange(cameraId, "on");
+      this.onChange(cameraId, "on", p.stream);
       if (first) toast.success("Энэ төхөөрөмжийн камерыг дамжуулж байна");
     } catch (err) {
       if (err instanceof ApiError && err.status >= 400 && err.status < 500) { // эрхгүй/олдсонгүй — дахин оролдох утгагүй
@@ -105,15 +106,19 @@ class BrowserPublishers {
   }
 }
 
-const PublisherContext = createContext<{ publishers: BrowserPublishers; states: Record<string, PublishState> } | null>(null);
+const PublisherContext = createContext<{ publishers: BrowserPublishers; states: Record<string, PublishState>; streams: Record<string, MediaStream | null> } | null>(null);
 
 export function BrowserPublisherProvider({ children }: { children: React.ReactNode }) {
   const [states, setStates] = useState<Record<string, PublishState>>({});
+  const [streams, setStreams] = useState<Record<string, MediaStream | null>>({});
   const [publishers] = useState(
-    () => new BrowserPublishers((cameraId, state) => setStates((prev) => (prev[cameraId] === state ? prev : { ...prev, [cameraId]: state }))),
+    () => new BrowserPublishers((cameraId, state, stream) => {
+      setStates((prev) => (prev[cameraId] === state ? prev : { ...prev, [cameraId]: state }));
+      setStreams((prev) => (prev[cameraId] === stream ? prev : { ...prev, [cameraId]: stream }));
+    }),
   );
   useEffect(() => () => publishers.stopAll(), [publishers]);
-  return <PublisherContext.Provider value={{ publishers, states }}>{children}</PublisherContext.Provider>;
+  return <PublisherContext.Provider value={{ publishers, states, streams }}>{children}</PublisherContext.Provider>;
 }
 
 export function useBrowserPublish(cameraId: string) {
@@ -124,4 +129,11 @@ export function useBrowserPublish(cameraId: string) {
     startPublish: () => void ctx.publishers.start(cameraId),
     stopPublish: () => ctx.publishers.stop(cameraId),
   };
+}
+
+/** Энэ browser-ээс дамжуулж буй камерын урсгал. Хажуугийн жижиг дэлгэц WHIP-ийг дахин нээхгүй. */
+export function usePublishPreview(cameraId: string): MediaStream | null {
+  const ctx = useContext(PublisherContext);
+  if (!ctx) throw new Error("usePublishPreview: BrowserPublisherProvider дотор ашиглана");
+  return ctx.streams[cameraId] ?? null;
 }
