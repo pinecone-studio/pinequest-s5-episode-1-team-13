@@ -54,14 +54,15 @@ export default function ViolationsPage() {
   const change = <T,>(setter: (v: T) => void) => (value: T) => { setter(value); setPage(1); };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex rounded-lg border p-0.5">
+        <div className="flex rounded-lg border border-border p-0.5">
           {STATUSES.map((s) => (
             <button
               key={s.label}
+              type="button"
               onClick={() => change(setStatus)(s.value)}
-              className={cn("rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors", status === s.value && "bg-muted font-medium text-foreground")}
+              className={cn("h-8 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:text-foreground", status === s.value && "bg-muted font-medium text-foreground")}
             >
               {s.label}
             </button>
@@ -77,7 +78,7 @@ export default function ViolationsPage() {
         <span className="ml-auto text-sm text-muted-foreground">нийт {total}</span>
       </div>
 
-      {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <ViolationTable items={items} onOpen={setSelected} />
 
       <div className="flex items-center justify-end gap-2">

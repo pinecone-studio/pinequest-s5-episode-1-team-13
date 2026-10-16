@@ -59,7 +59,7 @@ export function TrainPanel({ status }: { status: TrainingStatus }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
-        <CardHeader><CardTitle className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">МОДЕЛЬ СУРГАХ</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-sm font-medium">Модель сургах</CardTitle></CardHeader>
         <CardContent className="space-y-4 text-sm">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -76,8 +76,8 @@ export function TrainPanel({ status }: { status: TrainingStatus }) {
             </div>
           </div>
 
-          {!enough && <p className="text-xs text-amber-300">Шошглосон зураг {status.labeled_count}/{status.min_labeled}. «Шошглох» хэсэгт үргэлжлүүлнэ үү.</p>}
-          {!weightsReady && <p className="text-xs text-red-300">training/models/base-{base}.pt суурь жин олдсонгүй.</p>}
+          {!enough && <p className="text-xs text-warning">Шошглосон зураг {status.labeled_count}/{status.min_labeled}. «Шошглох» хэсэгт үргэлжлүүлнэ үү.</p>}
+          {!weightsReady && <p className="text-xs text-danger">training/models/base-{base}.pt суурь жин олдсонгүй.</p>}
 
           <div className="flex gap-2">
             <Button disabled={busy || running || !enough || !weightsReady} onClick={start}>Сургах</Button>
@@ -88,7 +88,7 @@ export function TrainPanel({ status }: { status: TrainingStatus }) {
             Сургалт энэ компьютер дээр явагдана (интернэтээс юу ч татахгүй). Apple GPU (MPS) ашиглана; 300 зураг, 40 epoch ойролцоогоор
             10–40 минут. Явагдаж байх хооронд dashboard болон камер хэвийн ажиллана.
           </p>
-          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+          <p className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
             Суурь жин нь ерөнхий (COCO) модель тул цөөн зургаар сургавал одоогийн моделоос <b>муу</b> гарч болно. Шинэ моделийг
             заавал доорх test үнэлгээгээр шалгаж, харьцуулж байж идэвхжүүлнэ.
           </p>
@@ -97,8 +97,8 @@ export function TrainPanel({ status }: { status: TrainingStatus }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">
-            ТӨЛӨВ · {state ? STATE_LABEL[state.state] : "…"}
+          <CardTitle className="text-sm font-medium">
+            Төлөв · {state ? STATE_LABEL[state.state] : "…"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
@@ -110,16 +110,16 @@ export function TrainPanel({ status }: { status: TrainingStatus }) {
               <div className="text-xs text-muted-foreground">Epoch {state.epoch ?? 0} / {state.epochs}</div>
             </div>
           )}
-          {state?.message && state.state !== "running" && <p className={state.state === "failed" ? "text-red-300" : "text-muted-foreground"}>{state.message}</p>}
+          {state?.message && state.state !== "running" && <p className={state.state === "failed" ? "text-danger" : "text-muted-foreground"}>{state.message}</p>}
 
           {state?.state === "done" && state.metrics && (
             <div className="space-y-3">
               <div className="text-xs text-muted-foreground">
                 Test өгөгдөл ({state.metrics.images.test} зураг, сургалтад ороогүй): mAP50 <b className="text-foreground">{state.metrics.map50}</b> · mAP50-95 {state.metrics.map50_95}
               </div>
-              <div className="overflow-x-auto rounded-xl border">
+              <div className="overflow-hidden rounded-lg border border-border">
                 <Table>
-                  <TableHeader><TableRow><TableHead>Ангилал</TableHead><TableHead>Нарийвчлал</TableHead><TableHead>Илрүүлэлт</TableHead><TableHead>mAP50</TableHead></TableRow></TableHeader>
+                  <TableHeader className="bg-muted [&_th]:h-9 [&_th]:px-3 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground"><TableRow className="border-border hover:bg-transparent"><TableHead>Ангилал</TableHead><TableHead>Нарийвчлал</TableHead><TableHead>Илрүүлэлт</TableHead><TableHead>mAP50</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {Object.entries(state.metrics.per_class).map(([cls, m]) => (
                       <TableRow key={cls}>

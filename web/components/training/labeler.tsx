@@ -289,7 +289,7 @@ export function Labeler({ onChanged }: { onChanged: () => void }) {
 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-xs text-muted-foreground">
-                {source === "auto" && <span className="mr-2 rounded bg-amber-500/15 px-2 py-0.5 font-medium text-amber-300">AI санал — шалгаж засаад хадгална уу</span>}
+                {source === "auto" && <span className="mr-2 rounded-md border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">AI санал — шалгаж засаад хадгална уу</span>}
                 {source === "manual" && <span className="mr-2 rounded bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-300">Баталсан</span>}
                 {boxes.length} хайрцаг · зураг дээр чирж хайрцаг зурна, хайрцгийг чирж зөөнө, булангаас нь размер өөрчилнө
               </div>

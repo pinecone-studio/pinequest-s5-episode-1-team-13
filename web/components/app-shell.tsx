@@ -28,7 +28,7 @@ function InAppBrowserBanner() {
   const inApp = useInAppBrowser();
   if (!inApp) return null;
   return (
-    <div role="alert" className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+    <div role="alert" className="mb-4 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
       {IN_APP_HINT}
     </div>
   );
@@ -51,11 +51,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-background md:flex">
-        <div className="flex items-center gap-2 border-b px-5 py-4">
-          <ShieldAlert className="size-5 text-primary" />
+        <div className="flex h-14 items-center gap-2 border-b px-4">
+          <ShieldAlert className="size-4 text-foreground" />
           <div className="leading-tight">
-            <div className="text-sm font-semibold tracking-wide">AI ХЯНАЛТ</div>
-            <div className="text-[11px] text-muted-foreground">Удирдлагын төв</div>
+            <div className="text-sm font-medium text-foreground">AI хяналт</div>
+            <div className="text-xs text-muted-foreground">Удирдлагын төв</div>
           </div>
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
@@ -66,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                  "flex h-9 items-center gap-2 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
                   active && "bg-foreground font-medium text-background hover:bg-foreground hover:text-background",
                 )}
               >
@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     href={href}
                     aria-label={label}
                     className={cn(
-                      "grid size-9 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground",
+                      "grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground",
                       active && "bg-foreground text-background hover:bg-foreground hover:text-background",
                     )}
                   >
@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 );
               })}
             </div>
-            <h1 className="truncate text-sm font-medium text-foreground">{title}</h1>
+            <h1 className="truncate text-base font-medium text-foreground">{title}</h1>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <button

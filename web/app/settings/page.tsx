@@ -54,11 +54,11 @@ function Users() {
 
   return (
     <Card>
-      <CardHeader><CardTitle className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">ХЭРЭГЛЭГЧ БА ЭРХ</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-sm font-medium">Хэрэглэгч ба эрх</CardTitle></CardHeader>
       <CardContent className="space-y-6">
-        <div className="overflow-x-auto rounded-xl border">
+        <div className="overflow-hidden rounded-lg border border-border">
           <Table>
-            <TableHeader><TableRow><TableHead>Имэйл</TableHead><TableHead>Нэр</TableHead><TableHead>Эрх</TableHead><TableHead>Сүүлд нэвтэрсэн</TableHead><TableHead>Идэвх</TableHead></TableRow></TableHeader>
+            <TableHeader className="bg-muted [&_th]:h-9 [&_th]:px-3 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground"><TableRow className="border-border hover:bg-transparent"><TableHead>Имэйл</TableHead><TableHead>Нэр</TableHead><TableHead>Эрх</TableHead><TableHead>Сүүлд нэвтэрсэн</TableHead><TableHead>Идэвх</TableHead></TableRow></TableHeader>
             <TableBody>
               {users.map((u) => (
                 <TableRow key={u.id}>
@@ -107,12 +107,12 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader><CardTitle className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">БҮРТГЭЛ БА СИСТЕМ</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-sm font-medium">Бүртгэл ба систем</CardTitle></CardHeader>
         <CardContent className="grid gap-4 text-sm sm:grid-cols-2">
-          <div><div className="text-[11px] uppercase tracking-wider text-muted-foreground">Нэвтэрсэн хэрэглэгч</div>{user.full_name || user.email}<div className="text-xs text-muted-foreground">{user.email}</div></div>
-          <div><div className="text-[11px] uppercase tracking-wider text-muted-foreground">Эрх</div><Badge variant="outline">{ROLE_LABEL[user.role]}</Badge></div>
-          <div><div className="text-[11px] uppercase tracking-wider text-muted-foreground">API</div>{API_URL || "/api (proxy)"}</div>
-          <div><div className="text-[11px] uppercase tracking-wider text-muted-foreground">Бодит цагийн холболт</div>{connected ? "Холбогдсон" : "Салсан"}</div>
+          <div><div className="text-xs font-medium text-muted-foreground">Нэвтэрсэн хэрэглэгч</div>{user.full_name || user.email}<div className="text-xs text-muted-foreground">{user.email}</div></div>
+          <div><div className="text-xs font-medium text-muted-foreground">Эрх</div><Badge variant="outline">{ROLE_LABEL[user.role]}</Badge></div>
+          <div><div className="text-xs font-medium text-muted-foreground">API</div>{API_URL || "/api (proxy)"}</div>
+          <div><div className="text-xs font-medium text-muted-foreground">Бодит цагийн холболт</div>{connected ? "Холбогдсон" : "Салсан"}</div>
         </CardContent>
       </Card>
       {can("ADMIN") && <Users />}

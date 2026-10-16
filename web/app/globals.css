@@ -100,5 +100,11 @@
   html {
     @apply font-sans;
   }
+  a:focus-visible,
+  button:focus-visible {
+    --tw-outline-style: solid;
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
 
