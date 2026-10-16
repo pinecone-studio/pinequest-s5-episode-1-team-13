@@ -1,6 +1,6 @@
 # Үйлдвэрийн компьютер, домэйнгүй (демо): ai-service + MediaMTX + cloudflared quick tunnel + edge-announcer.
 #   docker compose -f infra/edge/factory-quick.yml up -d --build
-# Тохиргоо: infra/edge/.env (BACKEND_URL, INTERNAL_API_KEY, EDGE_HOSTS, MODEL_FILE) + ai-service/.env
+# Тохиргоо: infra/edge/.env (BACKEND_URL, INTERNAL_API_KEY, EDGE_HOSTS, MODEL_PATH (заавал биш)) + ai-service/.env
 #
 # Browser -> https://<random>.trycloudflare.com (WHEP/WHIP) -> cloudflared -> mediamtx:8889
 # Хаяг cloudflared асах бүрт солигдоно: edge-announcer шинэ хаягийг backend-д мэдэгдэнэ. Тогтмол домэйн: factory.yml

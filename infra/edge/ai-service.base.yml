@@ -11,10 +11,13 @@ services:
       # Docker дотор localhost = container өөрөө тул эдгээрийг infra/edge/.env-ээс авна (ai-service/.env-ийнхийг дарна)
       BACKEND_URL: ${BACKEND_URL:?infra/edge/.env-д BACKEND_URL бөглөнө үү}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?infra/edge/.env-д INTERNAL_API_KEY бөглөнө үү}
-      MODEL_PATH: /training/models/${MODEL_FILE:-ppe.pt}
+      # Анхдагч: багийн сонгосон модель (git-д байгаа ai-service/models/ppe-ours-v2.pt).
+      # Training хуудсаар сургасан моделийг ашиглах бол infra/edge/.env-д MODEL_PATH=/training/models/<файл>
+      MODEL_PATH: ${MODEL_PATH:-/app/models/ppe-ours-v2.pt}
       DATASET_DIR: /training
     volumes:
       - ../../training:/training
+      - ../../ai-service/models:/app/models:ro  # image-д .pt байхгүй (.dockerignore), git-ийн моделийг эндээс уншина
     logging:
       driver: json-file
       options:
