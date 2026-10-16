@@ -59,19 +59,19 @@ export default function CamerasPage() {
     });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">Нийт {cameras.length} камер</p>
         {admin && (
           <Button onClick={() => { setEditing(null); setFormOpen(true); }}><Plus className="size-4" /> Камер нэмэх</Button>
         )}
       </div>
-      {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
-      <div className="overflow-x-auto rounded-xl border">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         <Table>
-          <TableHeader>
-            <TableRow>
+          <TableHeader className="bg-muted [&_th]:h-9 [&_th]:px-3 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
+            <TableRow className="border-border hover:bg-transparent">
               <TableHead>Камерын нэр</TableHead><TableHead>IP хаяг</TableHead><TableHead>Порт</TableHead>
               <TableHead>Төрөл</TableHead><TableHead>Бүс</TableHead><TableHead>Төлөв</TableHead>
               <TableHead>Сүүлд холбогдсон</TableHead>{admin && <TableHead className="text-right">Үйлдэл</TableHead>}

@@ -14,7 +14,7 @@ import type { Violation } from "@/types";
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
       <div className="text-sm">{children}</div>
     </div>
   );
@@ -90,12 +90,12 @@ export function ViolationDetailDialog({
                 {admin && (
                   confirmDelete ? (
                     <div className="mr-auto flex items-center gap-2">
-                      <span className="text-sm text-red-300">Зураг, бүртгэл бүрмөсөн устна. Итгэлтэй байна уу?</span>
+                      <span className="text-sm text-danger">Зураг, бүртгэл бүрмөсөн устна. Итгэлтэй байна уу?</span>
                       <Button variant="destructive" disabled={busy} onClick={remove}>Тийм, устгах</Button>
                       <Button variant="ghost" disabled={busy} onClick={() => setConfirmDelete(false)}>Болих</Button>
                     </div>
                   ) : (
-                    <Button variant="ghost" className="mr-auto text-red-400 hover:text-red-300" disabled={busy} onClick={() => setConfirmDelete(true)}>Устгах</Button>
+                    <Button variant="ghost" className="mr-auto text-danger hover:text-danger" disabled={busy} onClick={() => setConfirmDelete(true)}>Устгах</Button>
                   )
                 )}
                 {staff && violation.status === "OPEN" && (

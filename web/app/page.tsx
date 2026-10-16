@@ -73,11 +73,11 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <StatCards stats={stats} />
 
       <section>
-        <h2 className="mb-3 text-sm font-medium text-foreground">Камерын шууд хяналт</h2>
+        <h2 className="mb-4 text-sm font-medium text-foreground">Камерын шууд хяналт</h2>
         {cameras.length === 0 ? (
           <div className="rounded-lg border border-border bg-card px-6 py-10 text-center">
             <VideoOff className="mx-auto size-5 text-muted-foreground" />
@@ -93,7 +93,7 @@ export default function DashboardPage() {
       </section>
 
       <section>
-        <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-sm font-medium text-foreground">Сүүлийн зөрчлүүд</h2>
           <Link href="/violations" className="text-sm text-muted-foreground hover:text-foreground">Бүгдийг харах</Link>
         </div>

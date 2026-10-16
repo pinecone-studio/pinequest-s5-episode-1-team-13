@@ -31,10 +31,10 @@ export default function TrainingPage() {
   }
 
   return (
-    <div className="space-y-5 p-4 md:p-6">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Моделийн сургалт</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="text-sm font-medium text-foreground">Моделийн сургалт</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Камерын бодит зургаар каск, ажлын хувцсыг таних моделийг сайжруулна: зураг цуглуулах → шошглох → сургах.
         </p>
       </div>

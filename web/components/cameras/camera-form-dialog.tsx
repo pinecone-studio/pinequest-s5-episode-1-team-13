@@ -157,7 +157,7 @@ function CameraFormBody({ camera, zones, onClose, onSaved }: Props) {
           </div>
 
           {result && (
-            <div role="status" className={`col-span-2 rounded-lg border p-3 text-sm ${result.success ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-red-500/30 bg-red-500/10 text-red-300"}`}>
+            <div role="status" className={`col-span-2 rounded-lg border p-3 text-sm ${result.success ? "border-success/30 bg-success/10 text-success" : "border-danger/30 bg-danger/10 text-danger"}`}>
               <div className="font-medium">{result.success ? "Камер амжилттай холбогдлоо" : "RTSP stream-д холбогдож чадсангүй"}{result.resolution ? ` · ${result.resolution}` : ""}</div>
               {result.reason && <div className="mt-1 text-xs opacity-90">{result.reason}</div>}
             </div>

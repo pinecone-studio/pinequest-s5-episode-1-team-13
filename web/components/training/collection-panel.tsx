@@ -47,7 +47,7 @@ export function CollectionPanel({ status, onChanged }: { status: TrainingStatus;
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
-        <CardHeader><CardTitle className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">ӨГӨГДӨЛ ЦУГЛУУЛАЛТ</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-sm font-medium">Өгөгдөл цуглуулалт</CardTitle></CardHeader>
         <CardContent className="space-y-4 text-sm">
           <label className="flex cursor-pointer items-center gap-3">
             <input type="checkbox" className="size-4 accent-primary" checked={collection.enabled} disabled={busy}
@@ -67,7 +67,7 @@ export function CollectionPanel({ status, onChanged }: { status: TrainingStatus;
             Хүн байхгүй зургийг 5 дахин ховор авна (AI-ийн худал дохиог бууруулах «хоосон» жишээ). Дээд хязгаар {collection.max_images} зураг.
             Хязгаарт хүрвэл цуглуулалт өөрөө зогсоно.
           </p>
-          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+          <p className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
             Зурагт хүмүүсийн царай орно. Зургууд зөвхөн энэ компьютерийн <code>training/datasets/</code> хавтсанд хадгалагдаж, git-д орохгүй.
             Асаахаасаа өмнө ажилтнуудад мэдэгдсэн эсэхээ шалгана уу.
           </p>
@@ -75,7 +75,7 @@ export function CollectionPanel({ status, onChanged }: { status: TrainingStatus;
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">ЦУГЛУУЛСАН ӨГӨГДӨЛ</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-sm font-medium">Цуглуулсан өгөгдөл</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-3 text-center">
             <Stat label="Нийт зураг" value={status.image_count} />
@@ -101,9 +101,9 @@ export function CollectionPanel({ status, onChanged }: { status: TrainingStatus;
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-lg border p-3">
+    <div className="rounded-lg border border-border p-3">
       <div className="text-2xl font-semibold">{value}</div>
-      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }
