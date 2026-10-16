@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Video, VideoOff } from "lucide-react";
 
-import { BrowserPublisherProvider } from "@/components/dashboard/browser-publisher";
+import { BrowserPublisherProvider, usePublishPreview } from "@/components/dashboard/browser-publisher";
 import { CameraTile } from "@/components/dashboard/camera-tile";
+import { api, ApiError } from "@/lib/api";
 import { CAMERA_STATUS_LABEL, cameraTone, zoneLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { startWhep } from "@/lib/webrtc";
 import type { Camera } from "@/types";
+
+const PREVIEW_RETRY_MS = 2000;
+const PREVIEW_OFFLINE_RETRY_MS = 5000;
 
 const STATUS_DOT = {
   good: "bg-success",
@@ -23,10 +28,73 @@ const STATUS_TEXT = {
   idle: "text-muted-foreground",
 } as const;
 
+function ListPreview({ camera, previewStream }: { camera: Camera; previewStream: MediaStream | null }) {
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const live = camera.enabled && (camera.status === "STREAMING" || camera.status === "ONLINE");
+  const mirror = (camera.camera_type === "LOCAL_WEBCAM" || camera.camera_type === "BROWSER") && camera.mirror;
+  const Icon = !camera.enabled || camera.status === "OFFLINE" || camera.status === "ERROR" ? VideoOff : Video;
+
+  useEffect(() => {
+    if (!video || !previewStream) return;
+    video.srcObject = previewStream;
+    void video.play().catch(() => undefined);
+    return () => {
+      video.srcObject = null;
+    };
+  }, [video, previewStream]);
+
+  useEffect(() => {
+    if (previewStream || !live || !video) return;
+    let cancelled = false;
+    let pc: RTCPeerConnection | null = null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const retry = (wait = PREVIEW_RETRY_MS) => {
+      pc?.close();
+      pc = null;
+      if (!cancelled) timer = setTimeout(connect, wait);
+    };
+    const connect = async () => {
+      try {
+        const access = await api.webrtc(camera.id);
+        if (cancelled) return;
+        pc = await startWhep(access.whep_url, access.token, (stream) => { video.srcObject = stream; }, () => retry(), access.ice_servers);
+        if (cancelled) pc.close();
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) return;
+        retry(err instanceof ApiError && err.status === 503 ? PREVIEW_OFFLINE_RETRY_MS : PREVIEW_RETRY_MS);
+      }
+    };
+    connect();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      pc?.close();
+      video.srcObject = null;
+    };
+  }, [previewStream, live, video, camera.id]);
+
+  return (
+    <div className="relative grid aspect-video w-[7.25rem] shrink-0 place-items-center overflow-hidden rounded-lg bg-muted text-muted-foreground md:w-full lg:w-28">
+      {(previewStream || live) && (
+        <video
+          ref={setVideo}
+          autoPlay
+          muted
+          playsInline
+          onPlaying={() => setPlaying(true)}
+          onEmptied={() => setPlaying(false)}
+          className={cn("absolute inset-0 size-full object-cover", mirror && "-scale-x-100")}
+        />
+      )}
+      {!playing && <Icon className="relative size-4" />}
+    </div>
+  );
+}
+
 function CameraListItem({ camera, selected, onSelect }: { camera: Camera; selected: boolean; onSelect: (id: string) => void }) {
   const tone = cameraTone(camera.status);
-  const unavailable = !camera.enabled || camera.status === "OFFLINE" || camera.status === "ERROR";
-  const Icon = unavailable ? VideoOff : Video;
+  const previewStream = usePublishPreview(camera.id);
 
   return (
     <li>
@@ -39,9 +107,7 @@ function CameraListItem({ camera, selected, onSelect }: { camera: Camera; select
           selected && "border-foreground/20 bg-muted hover:bg-muted",
         )}
       >
-        <div className="grid aspect-video w-[7.25rem] shrink-0 place-items-center overflow-hidden rounded-lg bg-muted text-muted-foreground md:w-full lg:w-28">
-          <Icon className="size-4" />
-        </div>
+        <ListPreview camera={camera} previewStream={previewStream} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold text-foreground">{camera.name}</div>
           <div className="mt-0.5 truncate text-[13px] text-muted-foreground">{camera.zone ? zoneLabel(camera.zone) : "Бүсгүй"}</div>
@@ -56,7 +122,7 @@ function CameraListItem({ camera, selected, onSelect }: { camera: Camera; select
   );
 }
 
-/** Сонгосон камер л WHEP урсгал нээнэ. Жагсаалт нь төлөвийн зураг, урсгал давхардуулахгүй.
+/** Том дэлгэц сонгосон камерыг тоглуулна. Хажуугийн жижиг камер дамжуулалтаа тусад нь тоглуулна.
  * Browser камерын дамжуулалт (WHIP) энд амьдарна: өөр камер сонгоход тасрахгүй. */
 export function CameraWorkspace({ cameras }: { cameras: Camera[] }) {
   const [activeId, setActiveId] = useState<string | null>(null);
