@@ -99,3 +99,13 @@ def test_reader_keeps_only_newest_frame():
     reader.stop()
     frame, seq, _ = reader.latest()
     assert reader.state == STREAMING and seq >= 3 and frame is not None
+
+
+def test_webcam_in_docker_explains_itself(monkeypatch):
+    from app.cameras import reader
+
+    monkeypatch.setattr(reader, "in_docker", lambda: True)
+    assert "BROWSER" in reader.webcam_hint(0)
+    assert reader.webcam_hint("rtsp://cam/live") == ""
+    monkeypatch.setattr(reader, "in_docker", lambda: False)
+    assert reader.webcam_hint(0) == ""

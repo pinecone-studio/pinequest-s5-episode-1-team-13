@@ -10,6 +10,7 @@ import { DetectionOverlay } from "@/components/dashboard/detection-overlay";
 import { RestrictedAreaLayer } from "@/components/dashboard/restricted-area-layer";
 import { CameraStatusBadge } from "@/components/status-badges";
 import { api, ApiError } from "@/lib/api";
+import { IN_APP_HINT, isInAppBrowser } from "@/lib/in-app-browser";
 import { CAMERA_STATUS_LABEL, cameraTone, zoneLabel } from "@/lib/format";
 import { useElementSize } from "@/lib/use-element-size";
 import { startWhep, startWhip } from "@/lib/webrtc";
@@ -116,6 +117,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
     if (p.wanted) return; // давхар дарахаас хамгаална
     p.wanted = true;
     setPublishing("starting");
+    if (isInAppBrowser(navigator.userAgent)) toast.warning("Энэ browser камер дамжуулахгүй байж магадгүй", { description: IN_APP_HINT });
     try {
       p.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
     } catch (err) {
