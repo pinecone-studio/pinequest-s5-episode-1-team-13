@@ -9,13 +9,33 @@ services:
     volumes:
       - ../mediamtx.yml:/mediamtx.yml:ro
     environment:
-      MTX_AUTHHTTPADDRESS: ${BACKEND_URL:?infra/edge/.env-д BACKEND_URL бөглөнө үү}/internal/mediamtx/auth
+      # Нэвтрэлтийг backend биш mtx-auth шийднэ: backend удаан үед ai-service-ийн RTSP нээлт timeout болохгүй (mtx_auth.py)
+      MTX_AUTHHTTPADDRESS: http://mtx-auth:8002/
       # Container-ийн IP browser-т хүрэхгүй: энэ компьютерийн LAN IP (таслалаар, port-forward хийсэн бол public IP-г нэмнэ)
       MTX_WEBRTCADDITIONALHOSTS: ${EDGE_HOSTS:?infra/edge/.env-д EDGE_HOSTS (энэ компьютерийн LAN IP) бөглөнө үү}
     ports:
       - "8889:8889"
       - "8189:8189/udp"
       - "8189:8189/tcp"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  mtx-auth:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    command: python /mtx_auth.py
+    volumes:
+      - ./mtx_auth.py:/mtx_auth.py:ro
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?infra/edge/.env-д INTERNAL_API_KEY бөглөнө үү}
+      # Хоосон бол dashboard-ын токеныг backend руу дамжуулна (удаан, гэхдээ ai-service-д нөлөөлөхгүй)
+      JWT_SECRET: ${JWT_SECRET:-}
+      BACKEND_URL: ${BACKEND_URL:?infra/edge/.env-д BACKEND_URL бөглөнө үү}
+      MTX_AUTH_HOST: 0.0.0.0  # зөвхөн compose-ийн дотоод сүлжээнд (port гадагш нээхгүй)
+      PYTHONUNBUFFERED: "1"
     logging:
       driver: json-file
       options:
