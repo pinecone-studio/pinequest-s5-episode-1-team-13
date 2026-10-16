@@ -53,7 +53,8 @@ class Settings(BaseSettings):
 
     # Violation rules
     violation_confirm_seconds: float = Field(2.0, ge=0, le=60)  # must be seen this long before it is saved
-    violation_cooldown_seconds: float = Field(60, ge=5, le=3600)  # same person + same type: save again only after this
+    violation_cooldown_seconds: float = Field(60, ge=5, le=3600)  # a new visit of the same person + type: not sooner than this
+    violation_repeat_seconds: float = Field(0, ge=0, le=86400)  # one long visit: save again every N s (0 = once per visit)
     # Frames darker / blurrier than this are not used for violations or training pictures (0 = check off)
     min_brightness: float = Field(35, ge=0, le=255)
     min_sharpness: float = Field(25, ge=0, le=5000)
