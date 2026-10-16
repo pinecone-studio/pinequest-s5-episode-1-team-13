@@ -26,6 +26,18 @@ STALE_SECONDS = 5.0  # no new frame for this long = connection problem
 CONNECTING, STREAMING, RECONNECTING, ERROR = "CONNECTING", "STREAMING", "RECONNECTING", "ERROR"
 
 
+def in_docker() -> bool:
+    return os.path.exists("/.dockerenv")
+
+
+def webcam_hint(source: str | int) -> str:
+    """Docker Desktop (Mac/Windows) can't reach the computer's own webcam: say so instead of retrying silently."""
+    if isinstance(source, int) and in_docker():
+        return (" — a computer's own webcam can't be opened inside Docker (Mac/Windows). "
+                "Change the camera type to BROWSER on the dashboard, or run the AI service with Python")  # fmt: skip
+    return ""
+
+
 def open_capture(source: str | int) -> cv2.VideoCapture:
     if isinstance(source, int):
         return cv2.VideoCapture(source)
@@ -62,7 +74,7 @@ class FrameReader(threading.Thread):
             cap = self._open(self._source)
             if not cap.isOpened():
                 self.state = ERROR if backoff >= MAX_BACKOFF else RECONNECTING
-                logger.warning("Cannot open %s, retry in %.0fs", label, backoff)
+                logger.warning("Cannot open %s, retry in %.0fs%s", label, backoff, webcam_hint(self._source))
                 cap.release()
                 self._stop.wait(backoff)
                 backoff = min(backoff * 2, MAX_BACKOFF)
