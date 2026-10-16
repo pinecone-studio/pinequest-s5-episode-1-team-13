@@ -4,7 +4,7 @@ import Link from "next/link";
 import { VideoOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CameraTile } from "@/components/dashboard/camera-tile";
+import { CameraWorkspace } from "@/components/dashboard/camera-workspace";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { useRealtimeEvents } from "@/components/providers/realtime-provider";
 import { ViolationDetailDialog } from "@/components/violations/violation-detail-dialog";
@@ -86,9 +86,7 @@ export default function DashboardPage() {
             </p>
           </div>
         ) : (
-          <div className={cameras.length === 1 ? "grid max-w-3xl grid-cols-1 gap-5" : cameras.length === 2 ? "grid grid-cols-1 gap-5 lg:grid-cols-2" : "grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3"}>
-            {cameras.map((camera) => <CameraTile key={camera.id} camera={camera} />)}
-          </div>
+          <CameraWorkspace cameras={cameras} />
         )}
       </section>
 

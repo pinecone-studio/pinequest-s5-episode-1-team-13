@@ -20,7 +20,7 @@ function ppeLabel(helmet: PPEState, uniform: PPEState, helmetRequired: boolean):
 }
 
 /** Видеоны дээр AI-ийн боксыг зурна: «#1 Каскгүй · Ажлын хувцасгүй» (зөрчил = улаан, хэвийн = ногоон). */
-export function DetectionOverlay({ cameraId, video, mirror, rotation = 0 }: { cameraId: string; video: HTMLVideoElement | null; mirror: boolean; rotation?: number }) {
+export function DetectionOverlay({ cameraId, video, mirror, rotation = 0, onActivity }: { cameraId: string; video: HTMLVideoElement | null; mirror: boolean; rotation?: number; onActivity?: (state: "waiting" | "processing" | "error") => void }) {
   const connected = useRealtimeStatus();
   const [peopleCount, setPeopleCount] = useState<number | null>(null);
   const mirrorRef = useRef(mirror);
@@ -120,13 +120,9 @@ export function DetectionOverlay({ cameraId, video, mirror, rotation = 0 }: { ca
     return () => clearInterval(timer);
   }, []);
 
-  return (
-    <>
-      <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 size-full" />
-      <span className="pointer-events-none absolute right-3 top-3 flex items-center gap-2 rounded-lg bg-black/70 px-2 py-1 text-[11px] font-medium text-white">
-        <span className={`size-1.5 rounded-full ${!connected ? "bg-danger" : peopleCount === null ? "bg-white/50" : "bg-success"}`} />
-        {!connected ? "AI · холболт тасарсан" : peopleCount === null ? "AI · дохио алга" : `AI · ${peopleCount} хүн`}
-      </span>
-    </>
-  );
+  useEffect(() => {
+    onActivity?.(!connected ? "error" : peopleCount === null ? "waiting" : "processing");
+  }, [connected, peopleCount, onActivity]);
+
+  return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 size-full" />;
 }
