@@ -267,13 +267,13 @@ export function CameraTile({ camera }: { camera: Camera }) {
               <Button
                 type="button"
                 variant="outline"
-                size={camera.enabled ? "icon-sm" : "sm"}
+                size={camera.enabled ? "icon" : "default"}
                 disabled={powering}
                 onClick={togglePower}
                 aria-label={camera.enabled ? "Камерыг унтраах" : "Камер асаах"}
                 title={camera.enabled ? "Камерыг унтраах" : "Камер асаах"}
               >
-                <Power className="size-3.5" />
+                <Power className="size-4" />
                 {!camera.enabled && "Асаах"}
               </Button>
             )}
@@ -281,12 +281,12 @@ export function CameraTile({ camera }: { camera: Camera }) {
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={publishing === "off" ? startPublish : stopPublish}
                 aria-label={publishing === "off" ? "Энэ төхөөрөмжөөс дамжуулах" : "Дамжуулалт зогсоох"}
                 title={publishing === "off" ? "Энэ төхөөрөмжөөс дамжуулах" : "Дамжуулалт зогсоох"}
               >
-                {publishing === "starting" ? <Loader2 className="size-3.5 animate-spin" /> : <Video className="size-3.5" />}
+                {publishing === "starting" ? <Loader2 className="size-4 animate-spin" /> : <Video className="size-4" />}
                 {publishing === "off" ? "Дамжуулах" : publishing === "starting" ? "Холбогдож байна" : "Зогсоох"}
               </Button>
             )}
@@ -294,12 +294,12 @@ export function CameraTile({ camera }: { camera: Camera }) {
               <Button
                 type="button"
                 variant="outline"
-                size="icon-sm"
+                size="icon"
                 onClick={reloadPlayback}
                 aria-label="Видеог дахин ачаалах"
                 title="Видеог дахин ачаалах"
               >
-                <RefreshCw className="size-3.5" />
+                <RefreshCw className="size-4" />
               </Button>
             )}
             {canManageCameras && <span className="mx-0.5 h-4 w-px bg-border" />}
@@ -307,24 +307,24 @@ export function CameraTile({ camera }: { camera: Camera }) {
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="icon"
                 onClick={rotate}
                 title={`Эргүүлэх (дарах бүрт 90°, одоо ${rotation}°)`}
                 aria-label="Камерын харааг эргүүлэх"
               >
-                <RotateCw className="size-3.5" style={{ transform: `rotate(${rotation}deg)` }} />
+                <RotateCw className="size-4" style={{ transform: `rotate(${rotation}deg)` }} />
               </Button>
             )}
             {canManageCameras && playing && !editingArea && (
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="icon"
                 onClick={() => setEditingArea(true)}
                 title="Хориотой бүс зурах"
                 aria-label="Хориотой бүс зурах"
               >
-                <ShieldBan className="size-3.5" />
+                <ShieldBan className="size-4" />
               </Button>
             )}
           </div>

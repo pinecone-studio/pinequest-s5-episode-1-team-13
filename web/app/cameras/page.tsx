@@ -59,7 +59,7 @@ export default function CamerasPage() {
     });
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">Нийт {cameras.length} камер</p>
         {admin && (

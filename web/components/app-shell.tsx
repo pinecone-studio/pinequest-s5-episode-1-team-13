@@ -79,9 +79,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-4 border-b border-border bg-background px-4 md:px-6">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <div className="flex items-center gap-0.5 md:hidden">
+        <header className="flex h-14 items-center gap-2 border-b border-border bg-background px-4 max-sm:h-auto max-sm:flex-wrap max-sm:py-2 sm:gap-4 md:px-6">
+          <div className="order-1 flex items-center gap-1 md:hidden">
               {nav.map(({ href, icon: Icon, label }) => {
                 const active = isActive(pathname, href);
                 return (
@@ -90,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     href={href}
                     aria-label={label}
                     className={cn(
-                      "grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground",
+                      "grid size-10 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground",
                       active && "bg-foreground text-background hover:bg-foreground hover:text-background",
                     )}
                   >
@@ -99,29 +98,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 );
               })}
             </div>
-            <h1 className="truncate text-base font-medium text-foreground">{title}</h1>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <h1 className="order-2 min-w-0 flex-1 truncate text-base font-medium text-foreground max-sm:order-3 max-sm:w-full max-sm:flex-none">{title}</h1>
+          <div className="order-3 flex shrink-0 items-center gap-1 max-sm:order-2 max-sm:ml-auto">
             <button
               type="button"
               aria-pressed={sound}
               aria-label={sound ? "Дуут дохиог унтраах" : "Дуут дохиог асаах"}
               title={sound ? "Зөрчил илрэхэд дуу гарна (дарж унтраана)" : "Дуу унтраалттай (дарж асаана)"}
               onClick={() => { const next = !sound; setSoundEnabled(next); if (next) { unlockAudio(); playAlert(true); } }}
-              className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="grid size-10 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:size-8"
             >
               {sound ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
             </button>
-            <span className="flex items-center gap-2 text-xs text-muted-foreground" title="Бодит цагийн холболт">
+            <span className="flex items-center gap-2 text-xs text-muted-foreground" title={connected ? "Шууд холбогдсон" : "Дахин холбогдож байна"}>
               <span className={cn("size-2 rounded-full", connected ? "bg-success" : "bg-danger animate-pulse")} />
-              {connected ? "Шууд" : "Дахин холбогдож байна…"}
+              <span className="hidden sm:inline">{connected ? "Шууд" : "Дахин холбогдож байна…"}</span>
             </span>
             <span className="mx-1 hidden h-4 w-px bg-border sm:block" />
             <span className="hidden text-right leading-tight sm:block">
               <span className="block text-sm text-foreground">{user.full_name || user.email}</span>
               <span className="block text-xs text-muted-foreground">{ROLE_LABEL[user.role]}</span>
             </span>
-            <Button variant="ghost" size="icon" onClick={logout} aria-label="Гарах">
+            <Button variant="ghost" size="icon" className="size-10 sm:size-8" onClick={logout} aria-label="Гарах">
               <LogOut className="size-4" />
             </Button>
           </div>

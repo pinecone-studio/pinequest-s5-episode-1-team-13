@@ -24,11 +24,11 @@ function Snapshot({ url }: { url: string | null }) {
 
 export function ViolationTable({ items, onOpen, empty = "Зөрчил алга" }: { items: Violation[]; onOpen: (v: Violation) => void; empty?: string }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
+    <div className="max-w-full overflow-hidden rounded-lg border border-border bg-card">
       <Table>
         <TableHeader className="bg-muted">
           <TableRow className="border-border hover:bg-transparent">
-            <TableHead className={head}>Зураг</TableHead>
+            <TableHead className={`${head} sticky left-0 z-10 bg-muted`}>Зураг</TableHead>
             <TableHead className={head}>Зөрчил</TableHead>
             <TableHead className={head}>Камер</TableHead>
             <TableHead className={head}>Бүс</TableHead>
@@ -46,7 +46,7 @@ export function ViolationTable({ items, onOpen, empty = "Зөрчил алга" 
           )}
           {items.map((v) => (
             <TableRow key={v.id} className="cursor-pointer border-border hover:bg-muted/40" onClick={() => onOpen(v)}>
-              <TableCell className={cell}><Snapshot url={v.snapshot_url} /></TableCell>
+              <TableCell className={`${cell} sticky left-0 bg-card`}><Snapshot url={v.snapshot_url} /></TableCell>
               <TableCell className={cell}><ViolationTypeBadge type={v.violation_type} /></TableCell>
               <TableCell className={`${cell} max-w-40`}>
                 <span className="block truncate" title={v.camera_name}>{v.camera_name}</span>
