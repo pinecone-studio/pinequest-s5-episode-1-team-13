@@ -50,9 +50,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-background md:flex">
-        <div className="flex h-14 items-center gap-2 border-b px-4">
-          <ShieldAlert className="size-4 text-foreground" />
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
+        <div className="flex h-14 items-center gap-2 border-b border-border px-4">
+          <ShieldAlert className="size-4 text-sidebar-foreground" />
           <div className="leading-tight">
             <div className="text-sm font-medium text-foreground">AI хяналт</div>
             <div className="text-xs text-muted-foreground">Удирдлагын төв</div>
@@ -66,8 +66,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex h-9 items-center gap-2 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                  active && "bg-foreground font-medium text-background hover:bg-foreground hover:text-background",
+                  "flex h-9 items-center gap-2 rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground [&_svg]:text-sidebar-foreground",
+                  active && "bg-foreground font-medium text-white hover:bg-foreground hover:text-white [&_svg]:text-white",
                 )}
               >
                 <Icon className="size-4 shrink-0" />
@@ -78,8 +78,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-2 border-b border-border bg-background px-4 max-sm:h-auto max-sm:flex-wrap max-sm:py-2 sm:gap-4 md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col bg-white">
+        <header className="flex h-14 items-center gap-2 border-b border-border bg-white px-4 max-sm:h-auto max-sm:flex-wrap max-sm:py-2 sm:gap-4 md:px-8">
           <div className="order-1 flex items-center gap-1 md:hidden">
               {nav.map(({ href, icon: Icon, label }) => {
                 const active = isActive(pathname, href);
@@ -89,8 +89,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     href={href}
                     aria-label={label}
                     className={cn(
-                      "grid size-10 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground",
-                      active && "bg-foreground text-background hover:bg-foreground hover:text-background",
+                      "grid size-10 place-items-center rounded-lg text-sidebar-foreground hover:bg-muted",
+                      active && "bg-foreground text-white hover:bg-foreground hover:text-white",
                     )}
                   >
                     <Icon className="size-4" />
@@ -106,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-label={sound ? "Дуут дохиог унтраах" : "Дуут дохиог асаах"}
               title={sound ? "Зөрчил илрэхэд дуу гарна (дарж унтраана)" : "Дуу унтраалттай (дарж асаана)"}
               onClick={() => { const next = !sound; setSoundEnabled(next); if (next) { unlockAudio(); playAlert(true); } }}
-              className="grid size-10 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:size-8"
+              className="grid size-10 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:size-8"
             >
               {sound ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
             </button>
@@ -124,7 +124,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6"><InAppBrowserBanner />{children}</main>
+        <main className="flex-1 bg-white p-4 md:p-8"><InAppBrowserBanner />{children}</main>
       </div>
     </div>
   );

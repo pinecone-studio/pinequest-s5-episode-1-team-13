@@ -205,7 +205,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
   const showToolbar = canManageCameras || (camera.enabled && live);
 
   return (
-    <article className="overflow-hidden rounded-lg border border-border bg-card">
+    <article className="overflow-hidden rounded-2xl border border-border bg-card">
       <div className="relative aspect-video bg-black">
         <div ref={stageRef} className={cn("absolute inset-0 overflow-hidden bg-black", mirror && "-scale-x-100")}>
           <video
@@ -227,11 +227,11 @@ export function CameraTile({ camera }: { camera: Camera }) {
           <div className="absolute inset-0 grid place-items-center bg-muted text-muted-foreground">
             <div className="flex max-w-[85%] flex-col items-center gap-2 px-4 text-center">
               {!camera.enabled || camera.status === "OFFLINE" ? (
-                <VideoOff className="size-5" />
+                <VideoOff className="size-4" />
               ) : videoProblem || camera.status === "ERROR" ? (
-                <CircleAlert className="size-5" />
+                <CircleAlert className="size-4" />
               ) : (
-                <Loader2 className="size-5 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
               )}
               <p className="text-sm text-foreground">{stageText}</p>
             </div>
@@ -239,14 +239,14 @@ export function CameraTile({ camera }: { camera: Camera }) {
         )}
 
         {playing && (
-          <span className="pointer-events-none absolute left-2 top-2 flex items-center gap-1.5 rounded-md bg-black/70 px-2 py-1 text-[11px] font-medium text-white">
+          <span className="pointer-events-none absolute left-2 top-2 flex items-center gap-1.5 rounded-lg bg-black/70 px-2 py-1 text-[11px] font-medium text-white">
             <span className="size-1.5 animate-pulse rounded-full bg-danger" />
             Шууд
           </span>
         )}
       </div>
 
-      <div className="flex flex-col gap-3 px-3 py-3">
+      <div className="flex flex-col gap-3 p-4">
         <div className="flex flex-col gap-2">
           <div className="min-w-0">
             <div className="truncate text-sm font-medium text-foreground">{camera.name}</div>
@@ -262,7 +262,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
         </div>
 
         {showToolbar && (
-          <div className="flex flex-wrap items-center gap-1 border-t border-border pt-2">
+          <div className="flex flex-wrap items-center gap-1 border-t border-border pt-3">
             {canManageCameras && (
               <Button
                 type="button"

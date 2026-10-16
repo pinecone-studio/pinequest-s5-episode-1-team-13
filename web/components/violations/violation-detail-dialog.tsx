@@ -67,7 +67,7 @@ export function ViolationDetailDialog({
               <DialogTitle>{VIOLATION_LABEL[violation.violation_type]}</DialogTitle>
               <DialogDescription>{violation.camera_name} · {formatTime(violation.detected_at)}</DialogDescription>
             </DialogHeader>
-            <div className="overflow-hidden rounded-lg border bg-black">
+            <div className="overflow-hidden rounded-xl border bg-black">
               {violation.snapshot_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={violation.snapshot_url} alt="Зөрчлийн зураг" className="max-h-[60vh] w-full object-contain" />
