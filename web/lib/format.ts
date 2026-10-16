@@ -67,10 +67,10 @@ export function cameraTone(status: CameraStatus): "good" | "warn" | "bad" | "idl
 }
 
 export const TONE_CLASS = {
-  good: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  warn: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  bad: "bg-red-500/15 text-red-400 border-red-500/30",
-  idle: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
+  good: "border-success/30 bg-success/10 text-success",
+  warn: "border-warning/30 bg-warning/10 text-warning",
+  bad: "border-danger/30 bg-danger/10 text-danger",
+  idle: "border-border bg-muted text-muted-foreground",
 } as const;
 
 export const VIOLATION_STATUS_CLASS: Record<ViolationStatus, string> = {
