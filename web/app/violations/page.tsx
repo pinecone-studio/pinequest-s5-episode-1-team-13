@@ -54,7 +54,7 @@ export default function ViolationsPage() {
   const change = <T,>(setter: (v: T) => void) => (value: T) => { setter(value); setPage(1); };
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex rounded-lg border border-border p-0.5">
           {STATUSES.map((s) => (
