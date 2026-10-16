@@ -18,11 +18,13 @@ from app.config import get_settings
 from app.crypto import SecretBox
 from app.dataset.collector import CollectionConfig, DatasetCollector, ImageCounter
 from app.db import Database
+from app.detection.areas import RestrictedAreaConfig
 from app.detection.classes import parse_mapping
 from app.detection.device import pick_device
 from app.detection.model import Detector
 from app.detection.motion import MotionGate
 from app.detection.pipeline import CameraAI
+from app.leaked_keys import leaked_names
 from app.logging_setup import setup_logging
 from app.storage import SnapshotStorage
 from app.violations.reporter import ViolationReporter
@@ -45,6 +47,8 @@ def main() -> int:
     if problems:
         logger.error("Fill these in ai-service/.env first: %s", ", ".join(problems))
         return 1
+    for name in leaked_names(settings.secret_values()):
+        logger.error("SECURITY: %s is still an old key that leaked in the public git history — change it now (SECURITY.md)", name)
 
     try:
         parse_mapping(settings.class_mapping)
@@ -69,6 +73,7 @@ def main() -> int:
         logger.warning("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set: violations are saved WITHOUT snapshot pictures")
     reporter = ViolationReporter(db, storage, client)
     collection = CollectionConfig(db)
+    areas = RestrictedAreaConfig(db)
     dataset_root = settings.resolved_dataset_dir
     image_counter = ImageCounter(dataset_root / "datasets" / "raw")
 
@@ -79,7 +84,7 @@ def main() -> int:
         return CameraAI(
             client, make_detector, settings.detect_fps, rules=rules, reporter=reporter, collector=collector, motion=motion,
             min_brightness=settings.min_brightness, min_sharpness=settings.min_sharpness,
-            no_conf=settings.no_conf_threshold, smooth_window=settings.smooth_window,
+            no_conf=settings.no_conf_threshold, smooth_window=settings.smooth_window, areas=areas,
         )  # fmt: skip
 
     manager = CameraManager(

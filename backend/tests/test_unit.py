@@ -42,7 +42,7 @@ def test_rtsp_url_builder_encodes_credentials():
     )
     assert build_rtsp_url("a", "b", "h", 554, 2, 1, "HIKVISION").endswith("/Streaming/Channels/202")
     with pytest.raises(ValueError):
-        build_rtsp_url("a", "b", "h", 554, 1, 0, "GENERIC_RTSP")
+        build_rtsp_url("a", "b", "h", 554, 1, 0, "LOCAL_WEBCAM")
 
 
 def test_camera_schemas_never_expose_password_or_url():
@@ -276,3 +276,68 @@ def test_ice_servers_drop_invalid_urls(monkeypatch):
     assert svc.ice_servers() == [{"urls": ["stun:ok.example.com:3478"]}]
     warnings = svc.ice_config_warnings()
     assert any("http://bad.example.com" in w for w in warnings) and any("turn.example.com:3478" in w for w in warnings)
+
+
+def test_restricted_areas_validation():
+    from pydantic import ValidationError
+
+    from app.schemas.camera import RestrictedAreas
+
+    ok = RestrictedAreas(areas=[[(0.5, 0.5), (1, 0.5), (1, 1)]])
+    assert ok.areas == [[(0.5, 0.5), (1.0, 0.5), (1.0, 1.0)]]
+    assert RestrictedAreas().areas == [] and RestrictedAreas(areas=[]).areas == []
+    assert RestrictedAreas(areas=[[(0.123456, 0.5), (1, 0.5), (1, 1)]]).areas[0][0] == (0.1235, 0.5)
+    for bad in ([[(0, 0), (1, 1)]], [[(0, 0), (1.5, 0), (1, 1)]], [[(0, 0), (1, 0), (1, 1)]] * 6, [[(0.1, 0.1)] * 31]):
+        with pytest.raises(ValidationError):
+            RestrictedAreas(areas=bad)
+
+
+def test_generic_rtsp_full_url():
+    from pydantic import ValidationError
+
+    from app.schemas.camera import CameraCreate, CameraUpdate
+
+    base = {"name": "Phone", "rtsp_port": 554, "username": "u", "password": "p", "camera_type": "GENERIC_RTSP"}
+    cam = CameraCreate(**base, ip_address=" rtsp://192.168.1.50:8080/h264_ulaw.sdp ")
+    assert cam.ip_address == "rtsp://192.168.1.50:8080/h264_ulaw.sdp"
+    assert CameraCreate(**base, ip_address="192.168.1.50").ip_address == "192.168.1.50"
+    assert CameraUpdate(ip_address="rtsps://cam.local/live").ip_address == "rtsps://cam.local/live"
+    bad = ["rtsp://admin:secret@192.168.1.50/live", "rtsp:///nohost", "rtsp://bad host/x", "rtsp://1.2.3.4:99999/x", "http://1.2.3.4/x"]
+    for value in bad:
+        with pytest.raises(ValidationError):
+            CameraCreate(**base, ip_address=value)
+    with pytest.raises(ValidationError):  # full URL only for GENERIC_RTSP
+        CameraCreate(**{**base, "camera_type": "DAHUA"}, ip_address="rtsp://192.168.1.50/live")
+
+
+def test_generic_rtsp_url_matches_ai_service():
+    assert build_rtsp_url("a b", "p@ss", "rtsp://10.0.0.5:8080/h264.sdp?x=1", 554, 1, 0, "GENERIC_RTSP") == (
+        "rtsp://a%20b:p%40ss@10.0.0.5:8080/h264.sdp?x=1"
+    )
+    assert build_rtsp_url("u", "p", "10.0.0.5", 8554, 1, 0, "GENERIC_RTSP") == "rtsp://u:p@10.0.0.5:8554/"
+
+
+def test_cloud_backend_reports_offline_edge_instead_of_localhost(monkeypatch):
+    svc = _settings(monkeypatch, probe=False)  # cloud (Railway)
+    assert svc.media_server_offline("http://localhost:8889")
+    assert svc.media_server_offline("http://127.0.0.1:8889")
+    assert not svc.media_server_offline("https://abc.trycloudflare.com")
+    assert not svc.media_server_offline("https://media.example.com")
+    svc = _settings(monkeypatch, probe=True)  # локал: localhost зөв
+    assert not svc.media_server_offline("http://localhost:8889")
+
+
+def test_webrtc_endpoint_returns_503_when_edge_is_offline(monkeypatch):
+    import time
+
+    from fastapi import HTTPException
+
+    from app.api import cameras
+
+    _settings(monkeypatch, probe=False)
+    with pytest.raises(HTTPException) as exc:
+        cameras._media_url_or_503(_db_with(None))
+    assert exc.value.status_code == 503 and exc.value.detail == "Video server offline"
+    assert cameras._media_url_or_503(_db_with({"url": "https://abc.trycloudflare.com", "at": time.time()})) == (
+        "https://abc.trycloudflare.com"
+    )

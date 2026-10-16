@@ -1,20 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Power, RotateCw, Video, VideoOff } from "lucide-react";
+import { Power, RotateCw, ShieldBan, Video, VideoOff } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/providers/auth-provider";
 
 import { DetectionOverlay } from "@/components/dashboard/detection-overlay";
+import { RestrictedAreaLayer } from "@/components/dashboard/restricted-area-layer";
 import { CameraStatusBadge } from "@/components/status-badges";
 import { api, ApiError } from "@/lib/api";
+import { IN_APP_HINT, isInAppBrowser } from "@/lib/in-app-browser";
 import { CAMERA_STATUS_LABEL, cameraTone, zoneLabel } from "@/lib/format";
 import { useElementSize } from "@/lib/use-element-size";
 import { startWhep, startWhip } from "@/lib/webrtc";
 import type { Camera } from "@/types";
 
 const RETRY_MS = 2000;
+const OFFLINE_RETRY_MS = 5000; // edge унтраастай (503): асахыг хүлээж байх зуур backend-ийг ачаалахгүй
 const PUBLISH_RETRY_MS = 3000;
 
 /** Видеог цагийн зүүнд `rotation`° эргүүлж талбайд багтаана (90/270°-д өргөн, өндөр солигдоно). */
@@ -40,7 +43,9 @@ export function CameraTile({ camera }: { camera: Camera }) {
   const stageSize = useElementSize(stageRef);
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [videoProblem, setVideoProblem] = useState<string | null>(null); // жишээ: edge унтраастай
   const { canManageCameras } = useAuth();
+  const [editingArea, setEditingArea] = useState(false);
 
   async function rotate() {
     try {
@@ -104,7 +109,10 @@ export function CameraTile({ camera }: { camera: Camera }) {
         toast.error(err.message);
         return;
       }
-      if (first) toast.error("Холбогдож чадсангүй — дахин оролдож байна…");
+      if (first) {
+        const reason = err instanceof ApiError && err.status === 503 ? err.message : undefined;
+        toast.error("Холбогдож чадсангүй — дахин оролдож байна…", { description: reason });
+      }
       retry();
     }
   }
@@ -114,6 +122,7 @@ export function CameraTile({ camera }: { camera: Camera }) {
     if (p.wanted) return; // давхар дарахаас хамгаална
     p.wanted = true;
     setPublishing("starting");
+    if (isInAppBrowser(navigator.userAgent)) toast.warning("Энэ browser камер дамжуулахгүй байж магадгүй", { description: IN_APP_HINT });
     try {
       p.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
     } catch (err) {
@@ -145,20 +154,25 @@ export function CameraTile({ camera }: { camera: Camera }) {
     let pc: RTCPeerConnection | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
-    const retry = () => {
+    const retry = (wait = RETRY_MS) => {
       pc?.close();
       pc = null;
       setPlaying(false);
-      if (!cancelled) timer = setTimeout(connect, RETRY_MS);
+      if (!cancelled) timer = setTimeout(connect, wait);
     };
     const connect = async () => {
       try {
         const access = await api.webrtc(camera.id);
         if (cancelled) return;
-        pc = await startWhep(access.whep_url, access.token, (stream) => { video.srcObject = stream; }, retry, access.ice_servers);
+        setVideoProblem(null);
+        pc = await startWhep(access.whep_url, access.token, (stream) => { video.srcObject = stream; }, () => retry(), access.ice_servers);
         if (cancelled) pc.close();
       } catch (err) {
         if (err instanceof ApiError && err.status === 404) return; // камер устгагдсан — дахин асуухгүй
+        if (err instanceof ApiError && err.status === 503) {
+          setVideoProblem(err.message); // edge унтраастай: шалтгааныг харуулаад асахыг хүлээнэ
+          return retry(OFFLINE_RETRY_MS);
+        }
         retry(); // MediaMTX-д видео хараахан бэлэн биш / түр тасарсан
       }
     };
@@ -184,6 +198,10 @@ export function CameraTile({ camera }: { camera: Camera }) {
             className="absolute bg-black object-contain"
           />
         </div>
+        {playing && (
+          <RestrictedAreaLayer cameraId={camera.id} video={video} mirror={mirror} rotation={rotation}
+            editing={editingArea && canManageCameras} onDone={() => setEditingArea(false)} />
+        )}
         {playing && camera.ai_enabled && <DetectionOverlay cameraId={camera.id} video={video} mirror={mirror} rotation={rotation} />}
         {playing && !camera.ai_enabled && (
           <span className="pointer-events-none absolute right-4 top-4 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
@@ -193,9 +211,9 @@ export function CameraTile({ camera }: { camera: Camera }) {
 
         {!playing && (
           <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-zinc-900 to-zinc-950 text-muted-foreground">
-            <div className="flex flex-col items-center gap-3 text-sm">
+            <div className="flex max-w-[85%] flex-col items-center gap-3 text-center text-sm">
               <VideoOff className="size-10" />
-              {camera.enabled ? (live ? "Видео хүлээж байна…" : CAMERA_STATUS_LABEL[camera.status]) : "Камер унтраалттай"}
+              {camera.enabled ? (live ? (videoProblem ?? "Видео хүлээж байна…") : CAMERA_STATUS_LABEL[camera.status]) : "Камер унтраалттай"}
               {!camera.enabled && canManageCameras && (
                 <button type="button" disabled={powering} onClick={togglePower}
                   className="mt-1 flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60">
@@ -228,6 +246,15 @@ export function CameraTile({ camera }: { camera: Camera }) {
           >
             <Video className="size-4" />
             {publishing === "off" ? "Энэ төхөөрөмжөөс дамжуулах" : publishing === "starting" ? "Холбогдож байна… (зогсоох)" : "Дамжуулалт зогсоох"}
+          </button>
+        )}
+
+        {canManageCameras && playing && !editingArea && (
+          <button
+            type="button" onClick={() => setEditingArea(true)} title="Хориотой бүс зурах" aria-label="Хориотой бүс зурах"
+            className="absolute bottom-16 right-16 grid size-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur transition hover:bg-red-600"
+          >
+            <ShieldBan className="size-5" />
           </button>
         )}
 

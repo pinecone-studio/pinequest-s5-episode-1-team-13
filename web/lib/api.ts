@@ -1,5 +1,5 @@
 import type {
-  Camera, CameraInput, ConnectionTestResult, DashboardStats, LabelBox, Role, TrainingImage, TrainingStatus, TrainState, User, Violation, ViolationPage,
+  AreaPoint, Camera, CameraInput, ConnectionTestResult, DashboardStats, LabelBox, Role, TrainingImage, TrainingStatus, TrainState, User, Violation, ViolationPage,
   ViolationStatus, ViolationType, Zone, ZoneName,
 } from "@/types";
 
@@ -22,6 +22,7 @@ const KNOWN_ERRORS: Record<string, string> = {
   "No recent frame": "Саяхны зураг алга",
   "Origin not allowed": "Хүсэлтийн эх сурвалж зөвшөөрөгдөөгүй",
   "Unknown zone_id": "Тодорхойгүй бүс",
+  "Video server offline": "Видео сервер (edge компьютер) унтраастай байна — камертай компьютер дээр edge-ийг асаана уу",
 };
 
 function describe(detail: unknown): string {
@@ -81,6 +82,10 @@ export const api = {
   testCameraInput: (input: CameraInput) => request<ConnectionTestResult>("/api/cameras/test-connection", { method: "POST", json: input }),
   connectCamera: (id: string) => request<Camera>(`/api/cameras/${id}/connect`, { method: "POST" }),
   disconnectCamera: (id: string) => request<Camera>(`/api/cameras/${id}/disconnect`, { method: "POST" }),
+  /** Хориотой бүс(үүд): хүний хөл дотор нь орвол зөрчил. [] = бүсгүй */
+  restrictedArea: (id: string) => request<{ areas: AreaPoint[][] }>(`/api/cameras/${id}/restricted-area`),
+  saveRestrictedArea: (id: string, areas: AreaPoint[][]) =>
+    request<{ areas: AreaPoint[][] }>(`/api/cameras/${id}/restricted-area`, { method: "PUT", json: { areas } }),
   /** Шууд видеоны WebRTC (WHEP) хаяг + богино хугацаатай токен */
   webrtc: (id: string) =>
     request<{ whep_url: string; token: string; expires_in: number; ice_servers?: RTCIceServer[] }>(`/api/cameras/${id}/webrtc`),

@@ -47,6 +47,12 @@ def build_rtsp_url(
         return f"rtsp://{user}:{pwd}@{ip}:{port}/cam/realmonitor?channel={channel}&subtype={subtype}"
     if kind == "HIKVISION":
         return f"rtsp://{user}:{pwd}@{ip}:{port}/Streaming/Channels/{channel * 100 + subtype + 1}"
+    if kind == "GENERIC_RTSP":  # ai-service/app/cameras/sources.py-тэй ижил
+        if ip.lower().startswith(("rtsp://", "rtsps://")):  # бүтэн хаяг: нэр/нууц үгийг host-ын өмнө нэмнэ
+            parts = urlsplit(ip)
+            netloc = f"{user}:{pwd}@{parts.hostname}" + (f":{parts.port}" if parts.port else "")
+            return parts._replace(netloc=netloc).geturl()
+        return f"rtsp://{user}:{pwd}@{ip}:{port}/"
     raise ValueError(f"{camera_type} төрлийн камерын RTSP хаягийг автоматаар үүсгэх боломжгүй")
 
 
@@ -96,6 +102,17 @@ def public_media_url(db, now: float | None = None) -> str:
             if isinstance(url, str) and url.startswith("https://") and fresh:
                 return url.rstrip("/")
     return settings.mediamtx_public_url.rstrip("/")
+
+
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+
+
+def media_server_offline(url: str) -> bool:
+    """Cloud backend (CAMERA_PROBE_ENABLED=false) бөгөөд edge-ийн шинэ хаяг алга -> MEDIAMTX_PUBLIC_URL нь ихэвчлэн
+    localhost: хэрэглэгчийн browser хэзээ ч хүрэхгүй. Тэр үед буруу хаяг өгөхийн оронд "edge унтарсан" гэж хэлнэ."""
+    if get_settings().camera_probe_enabled:
+        return False  # локал горим: localhost зөв
+    return (urlsplit(url).hostname or "").lower() in _LOCAL_HOSTS
 
 
 _STUN_SCHEMES = ("stun:", "stuns:")
@@ -181,6 +198,10 @@ def probe_rtsp(*, username: str, password: str, ip: str, port: int, channel: int
         url = build_rtsp_url(username, password, ip, port, channel, subtype, camera_type)
     except ValueError as exc:
         return ConnectionTestResult(success=False, status="ERROR", message="Unable to connect to RTSP stream", reason=str(exc))
+
+    if ip.lower().startswith(("rtsp://", "rtsps://")):  # бүтэн RTSP хаяг: TCP шалгалтад host/порт-ыг URL-аас авна
+        parts = urlsplit(ip)
+        ip, port = parts.hostname or ip, parts.port or (322 if parts.scheme.lower() == "rtsps" else 554)
 
     def fail(reason: str) -> ConnectionTestResult:
         logger.warning("Camera connection test failed | ip=%s port=%s reason=%s", ip, port, reason)

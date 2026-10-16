@@ -9,6 +9,7 @@ import { useRealtimeStatus } from "@/components/providers/realtime-provider";
 import { Button } from "@/components/ui/button";
 import { playAlert, setSoundEnabled, unlockAudio, useSoundEnabled } from "@/lib/alert-sound";
 import { ROLE_LABEL } from "@/lib/format";
+import { IN_APP_HINT, useInAppBrowser } from "@/lib/in-app-browser";
 import { cn } from "@/lib/utils";
 
 const NAV: { href: string; label: string; icon: typeof Camera; adminOnly?: boolean }[] = [
@@ -20,7 +21,15 @@ const NAV: { href: string; label: string; icon: typeof Camera; adminOnly?: boole
 ];
 
 function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  return href === "/" ? pathname === "/" : pathname.startsWith(href)
+function InAppBrowserBanner() {
+  const inApp = useInAppBrowser();
+  if (!inApp) return null;
+  return (
+    <div role="alert" className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+      {IN_APP_HINT}
+    </div>
+  );
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -117,7 +126,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6"><InAppBrowserBanner />{children}</main>
       </div>
     </div>
   );

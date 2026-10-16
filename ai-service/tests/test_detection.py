@@ -74,7 +74,7 @@ def test_payload_is_normalised():
     [p] = analyse([PERSON, HEAD_HELMET], helmet_required=True)
     data = p.to_payload(400, 500)
     assert data["box"] == [0.25, 0.2, 0.5, 0.8]
-    assert set(data) == {"id", "box", "helmet_box", "helmet", "uniform", "violation", "helmet_required"}
+    assert set(data) == {"id", "box", "helmet_box", "helmet", "uniform", "violation", "helmet_required", "restricted"}
 
 
 class FakeClient:
