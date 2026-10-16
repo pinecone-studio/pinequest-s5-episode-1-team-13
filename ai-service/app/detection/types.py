@@ -26,6 +26,7 @@ class PersonResult:
     helmet_required: bool = True
     violation: bool = False
     restricted: bool = False  # feet inside a restricted area
+    down: bool = False  # lying on the floor (box much wider than tall), see fall.py
     area: tuple[tuple[int, int], ...] | None = None  # that area in pixels (for the snapshot picture)
 
     def to_payload(self, width: int, height: int) -> dict:

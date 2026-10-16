@@ -15,7 +15,7 @@ from app.cameras.models import CameraInfo
 from app.db import Database
 from app.detection.types import PersonResult
 from app.storage import SnapshotStorage, snapshot_path
-from app.violations.rules import NO_HELMET, NO_WORK_UNIFORM
+from app.violations.rules import DB_TYPE, NO_HELMET, NO_WORK_UNIFORM
 from app.violations.snapshot import make_snapshot
 
 logger = logging.getLogger("ai.violations")
@@ -42,7 +42,7 @@ class ViolationReporter:
                 path = None  # still save the violation, just without a picture
             confidence = {NO_HELMET: person.helmet_conf, NO_WORK_UNIFORM: person.uniform_conf}.get(vtype, person.conf)
             person_id = str(person.id) if person.id is not None else None
-            rows = self._db.fetch(INSERT_SQL, (vtype, person_id, round(confidence, 4) or None, path, camera.id))
+            rows = self._db.fetch(INSERT_SQL, (DB_TYPE.get(vtype, vtype), person_id, round(confidence, 4) or None, path, camera.id))
             if not rows:
                 logger.warning("Camera %s was deleted, violation dropped", camera.name)
                 return None

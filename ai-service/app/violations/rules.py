@@ -21,6 +21,9 @@ from app.detection.types import Box, PersonResult
 NO_HELMET, NO_WORK_UNIFORM = "NO_HELMET", "NO_WORK_UNIFORM"  # = violation_type enum in the DB
 # The DB has no own type for this yet; OTHER_SAFETY_VIOLATION already exists in the DB, backend and web
 RESTRICTED_AREA = "OTHER_SAFETY_VIOLATION"
+# Internal type only (own streak + own snapshot label). Saved to the DB as OTHER_SAFETY_VIOLATION, see DB_TYPE.
+PERSON_DOWN = "PERSON_DOWN"
+DB_TYPE = {PERSON_DOWN: "OTHER_SAFETY_VIOLATION"}
 MAX_GAP = 1.5  # seconds a "NO" may disappear while it is still being confirmed, without restarting the timer
 VISIT_GAP = 10.0  # after it was saved: gone for longer than this = the person left, the next time is a new visit
 SAME_PLACE_IOU = 0.3  # a new tracker id this close to a just-saved violation of the same type = the same person
@@ -34,6 +37,8 @@ def violation_types(person: PersonResult) -> list[str]:
         types.append(NO_WORK_UNIFORM)
     if person.restricted:
         types.append(RESTRICTED_AREA)
+    if person.down:
+        types.append(PERSON_DOWN)
     return types
 
 
