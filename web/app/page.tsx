@@ -7,7 +7,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CameraTile } from "@/components/dashboard/camera-tile";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { useRealtimeEvents } from "@/components/providers/realtime-provider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ViolationDetailDialog } from "@/components/violations/violation-detail-dialog";
 import { ViolationTable } from "@/components/violations/violation-table";
 import { api } from "@/lib/api";
@@ -93,15 +92,13 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">СҮҮЛИЙН ЗӨРЧЛҮҮД</CardTitle>
-          <Link href="/violations" className="text-xs text-muted-foreground hover:text-foreground">Бүгдийг харах →</Link>
-        </CardHeader>
-        <CardContent>
-          <ViolationTable items={recent} onOpen={setSelected} empty="Зөрчил илрээгүй байна" />
-        </CardContent>
-      </Card>
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-medium text-foreground">Сүүлийн зөрчлүүд</h2>
+          <Link href="/violations" className="text-sm text-muted-foreground hover:text-foreground">Бүгдийг харах</Link>
+        </div>
+        <ViolationTable items={recent} onOpen={setSelected} empty="Зөрчил илрээгүй байна" />
+      </section>
 
       <ViolationDetailDialog
         violation={selected}
