@@ -28,6 +28,12 @@ const STATUS_TEXT = {
   idle: "text-muted-foreground",
 } as const;
 
+/** Видео элементэд урсгал тавина (effect-ийн гадна: React state-ийн утгыг effect дотор шууд өөрчлөхгүй). */
+function showStream(video: HTMLVideoElement, stream: MediaStream | null) {
+  video.srcObject = stream;
+  if (stream) void video.play().catch(() => undefined);
+}
+
 function ListPreview({ camera, previewStream }: { camera: Camera; previewStream: MediaStream | null }) {
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -37,11 +43,8 @@ function ListPreview({ camera, previewStream }: { camera: Camera; previewStream:
 
   useEffect(() => {
     if (!video || !previewStream) return;
-    video.srcObject = previewStream;
-    void video.play().catch(() => undefined);
-    return () => {
-      video.srcObject = null;
-    };
+    showStream(video, previewStream);
+    return () => showStream(video, null);
   }, [video, previewStream]);
 
   useEffect(() => {
