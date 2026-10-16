@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Video, VideoOff } from "lucide-react";
 
+import { BrowserPublisherProvider } from "@/components/dashboard/browser-publisher";
 import { CameraTile } from "@/components/dashboard/camera-tile";
 import { CAMERA_STATUS_LABEL, cameraTone, zoneLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -55,22 +56,25 @@ function CameraListItem({ camera, selected, onSelect }: { camera: Camera; select
   );
 }
 
-/** Сонгосон камер л WHEP урсгал нээнэ. Жагсаалт нь төлөвийн зураг, урсгал давхардуулахгүй. */
+/** Сонгосон камер л WHEP урсгал нээнэ. Жагсаалт нь төлөвийн зураг, урсгал давхардуулахгүй.
+ * Browser камерын дамжуулалт (WHIP) энд амьдарна: өөр камер сонгоход тасрахгүй. */
 export function CameraWorkspace({ cameras }: { cameras: Camera[] }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const active = cameras.find((camera) => camera.id === activeId) ?? cameras[0];
   if (!active) return null;
 
   return (
-    <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-[minmax(0,1fr)_minmax(8.75rem,30%)] lg:grid-cols-[minmax(0,1fr)_minmax(16rem,28%)] lg:gap-6">
-      <div className="min-w-0">
-        <CameraTile key={active.id} camera={active} />
+    <BrowserPublisherProvider>
+      <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-[minmax(0,1fr)_minmax(8.75rem,30%)] lg:grid-cols-[minmax(0,1fr)_minmax(16rem,28%)] lg:gap-6">
+        <div className="min-w-0">
+          <CameraTile key={active.id} camera={active} />
+        </div>
+        <ul aria-label="Камерууд" className="flex min-h-0 min-w-0 flex-col gap-3 md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto">
+          {cameras.map((camera) => (
+            <CameraListItem key={camera.id} camera={camera} selected={camera.id === active.id} onSelect={setActiveId} />
+          ))}
+        </ul>
       </div>
-      <ul aria-label="Камерууд" className="flex min-h-0 min-w-0 flex-col gap-3 md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto">
-        {cameras.map((camera) => (
-          <CameraListItem key={camera.id} camera={camera} selected={camera.id === active.id} onSelect={setActiveId} />
-        ))}
-      </ul>
-    </div>
+    </BrowserPublisherProvider>
   );
 }
